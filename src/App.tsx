@@ -20,6 +20,7 @@ import { SettingsView } from './components/settings/SettingsView';
 const MainAppContent: React.FC = () => {
   const {
     currentUser,
+    isLoggedIn,
     currentView,
     selectedStudentDetailId,
     setSelectedStudentDetailId,
@@ -28,13 +29,28 @@ const MainAppContent: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // If not logged in, show the role simulation login page
-  if (!currentUser.isAuthenticated) {
+  // If not logged in, show the role-tailored login page
+  if (!currentUser.isAuthenticated || !isLoggedIn) {
     return <LoginPage />;
   }
 
-  // Render view based on active navigation item
+  // Render view based on active navigation item with role protection
   const renderCurrentView = () => {
+    // Guard views restricted for specific roles
+    if (currentUser.role === 'wali_kelas') {
+      if (['settings', 'coaches', 'extracurriculars', 'attendance'].includes(currentView)) {
+        return <DashboardRouter />;
+      }
+    } else if (currentUser.role === 'pembina') {
+      if (['settings', 'coaches'].includes(currentView)) {
+        return <DashboardRouter />;
+      }
+    } else if (currentUser.role === 'kepala_sekolah') {
+      if (['settings'].includes(currentView)) {
+        return <DashboardRouter />;
+      }
+    }
+
     switch (currentView) {
       case 'dashboard':
         return <DashboardRouter />;

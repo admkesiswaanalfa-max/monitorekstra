@@ -31,13 +31,26 @@ export const StudentList: React.FC = () => {
     setSelectedStudentDetailId,
   } = useApp();
 
-  // Search & Filters
+  // Search & Filters initialized based on user role
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterClass, setFilterClass] = useState('all');
-  const [filterEkskul, setFilterEkskul] = useState('all');
+  const [filterClass, setFilterClass] = useState<string>(() => {
+    return currentUser.role === 'wali_kelas' && currentUser.assignedClass ? currentUser.assignedClass : 'all';
+  });
+  const [filterEkskul, setFilterEkskul] = useState<string>(() => {
+    return currentUser.role === 'pembina' && currentUser.assignedEkskulId ? currentUser.assignedEkskulId : 'all';
+  });
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState<'name' | 'nis' | 'attendance' | 'score'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Synchronize filter when role or user assignment changes
+  React.useEffect(() => {
+    if (currentUser.role === 'wali_kelas' && currentUser.assignedClass) {
+      setFilterClass(currentUser.assignedClass);
+    } else if (currentUser.role === 'pembina' && currentUser.assignedEkskulId) {
+      setFilterEkskul(currentUser.assignedEkskulId);
+    }
+  }, [currentUser.role, currentUser.assignedClass, currentUser.assignedEkskulId]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -171,19 +184,68 @@ export const StudentList: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Role Notice Banner */}
+      {currentUser.role === 'wali_kelas' && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 rounded-md font-bold bg-amber-200 text-amber-900 text-[11px]">
+              Wali Kelas {currentUser.assignedClass || 'Perwalian'}
+            </span>
+            <span>
+              Menampilkan data siswa untuk <strong>Kelas {currentUser.assignedClass || 'Binaan'}</strong>. Anda dapat meninjau keaktifan cabang, kehadiran, dan skor penilaian masing-masing anak.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilterClass('all')}
+            className="text-[11px] font-bold text-amber-700 hover:text-amber-900 underline shrink-0 ml-3"
+          >
+            {filterClass === 'all' ? `Filter Kelas ${currentUser.assignedClass}` : 'Lihat Seluruh Siswa'}
+          </button>
+        </div>
+      )}
+
+      {currentUser.role === 'pembina' && (
+        <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs text-blue-900">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 rounded-md font-bold bg-blue-200 text-blue-900 text-[11px]">
+              Pembina Cabang
+            </span>
+            <span>
+              Menampilkan data siswa anggota ekstrakurikuler binaan Anda. Anda dapat mengelola catatan keaktifan dan perkembangan kompetensi.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilterEkskul('all')}
+            className="text-[11px] font-bold text-blue-700 hover:text-blue-900 underline shrink-0 ml-3"
+          >
+            {filterEkskul === 'all' ? 'Filter Ekskul Saya' : 'Lihat Seluruh Siswa'}
+          </button>
+        </div>
+      )}
+
       {/* Page Heading and Action Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Data Siswa Ekstrakurikuler
+              {currentUser.role === 'wali_kelas'
+                ? `Data Siswa Kelas ${currentUser.assignedClass || 'Perwalian'}`
+                : currentUser.role === 'pembina'
+                ? 'Data Siswa Anggota Ekstrakurikuler'
+                : 'Data Siswa Ekstrakurikuler'}
             </h2>
             <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
-              {students.length} Total Siswa
+              {filteredStudents.length} Siswa Terpilih
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Manajemen lengkap peserta ekstrakurikuler, kelas binaan, dan status keaktifan
+            {currentUser.role === 'wali_kelas'
+              ? `Pemantauan status ekstrakurikuler & capaian peserta didik Kelas ${currentUser.assignedClass}`
+              : currentUser.role === 'pembina'
+              ? 'Manajemen anggota terdaftar, status presensi, dan evaluasi capaian cabang'
+              : 'Manajemen lengkap peserta ekstrakurikuler, kelas binaan, dan status keaktifan'}
           </p>
         </div>
 

@@ -324,6 +324,18 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar, isSidebar
             )}
           </div>
 
+          {/* Quick Logout / Return to Login Page Button */}
+          <button
+            type="button"
+            id="btn-navbar-logout"
+            onClick={logout}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+            title="Keluar / Ganti Akun Login"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Ganti Akun</span>
+          </button>
+
           {/* User Profile Avatar & Dropdown */}
           <div className="relative">
             <button
@@ -369,30 +381,40 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar, isSidebar
                   </div>
                 </div>
 
-                <div className="p-1.5">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">Ganti Peran Pengguna</p>
-                  {(['admin', 'kepala_sekolah', 'pembina', 'wali_kelas'] as UserRole[]).map((r) => {
-                    const cfg = roleLabels[r];
-                    const active = currentUser.role === r;
-                    return (
-                      <button
-                        key={r}
-                        onClick={() => {
-                          switchRole(r);
-                          setShowProfileMenu(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                          active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <cfg.icon className="w-3.5 h-3.5" />
-                          {cfg.label}
+                <div className="p-3 text-xs space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Informasi Akun & Wewenang
+                  </p>
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 space-y-1.5 text-slate-600">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">NIP / ID:</span>
+                      <span className="font-mono font-medium text-slate-800">{currentUser.nip || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Wewenang:</span>
+                      <span className="font-bold text-slate-800">{currentRoleConfig.label}</span>
+                    </div>
+                    {currentUser.assignedEkskulId && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Binaan:</span>
+                        <span className="font-semibold text-blue-700">
+                          {extracurriculars.find((e) => e.id === currentUser.assignedEkskulId)?.name || 'Ekstrakurikuler'}
                         </span>
-                        {active && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                      </button>
-                    );
-                  })}
+                      </div>
+                    )}
+                    {currentUser.assignedClass && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Perwalian:</span>
+                        <span className="font-semibold text-amber-700">
+                          Kelas {currentUser.assignedClass}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Sekolah:</span>
+                      <span className="font-semibold text-slate-800">SMP Alfa Ali Masykur</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-1.5 border-t border-slate-100">

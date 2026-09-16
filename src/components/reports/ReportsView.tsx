@@ -46,13 +46,34 @@ export const ReportsView: React.FC = () => {
 
   const [selectedReport, setSelectedReport] = useState<
     'executive' | 'individual' | 'recap_ekskul' | 'attendance' | 'achievements' | 'rapor_export'
-  >('executive');
+  >(() => {
+    if (currentUser.role === 'wali_kelas') return 'rapor_export';
+    if (currentUser.role === 'pembina') return 'recap_ekskul';
+    return 'executive';
+  });
 
   const [filterAcademicYear, setFilterAcademicYear] = useState('2025/2026');
   const [filterSemester, setFilterSemester] = useState('Ganjil');
-  const [filterClass, setFilterClass] = useState('all');
-  const [filterEkskul, setFilterEkskul] = useState(extracurriculars[0]?.id || 'ekskul-1');
+  const [filterClass, setFilterClass] = useState<string>(() => {
+    return currentUser.role === 'wali_kelas' && currentUser.assignedClass ? currentUser.assignedClass : 'all';
+  });
+  const [filterEkskul, setFilterEkskul] = useState<string>(() => {
+    return currentUser.role === 'pembina' && currentUser.assignedEkskulId
+      ? currentUser.assignedEkskulId
+      : extracurriculars[0]?.id || 'ekskul-1';
+  });
   const [filterStudentId, setFilterStudentId] = useState(students[0]?.id || '');
+
+  // Sync role defaults when user switches role
+  React.useEffect(() => {
+    if (currentUser.role === 'wali_kelas') {
+      setSelectedReport('rapor_export');
+      if (currentUser.assignedClass) setFilterClass(currentUser.assignedClass);
+    } else if (currentUser.role === 'pembina') {
+      setSelectedReport('recap_ekskul');
+      if (currentUser.assignedEkskulId) setFilterEkskul(currentUser.assignedEkskulId);
+    }
+  }, [currentUser.role, currentUser.assignedClass, currentUser.assignedEkskulId]);
 
   // Print Settings State
   const [showPrintModal, setShowPrintModal] = useState(false);

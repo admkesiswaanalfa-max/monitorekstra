@@ -13,11 +13,24 @@ import {
 } from 'lucide-react';
 
 export const EvaluationView: React.FC = () => {
-  const { students, extracurriculars, showToast } = useApp();
+  const { students, extracurriculars, currentUser, showToast } = useApp();
 
-  const [selectedClass, setSelectedClass] = useState('all');
-  const [selectedEkskul, setSelectedEkskul] = useState('all');
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    return currentUser.role === 'wali_kelas' && currentUser.assignedClass ? currentUser.assignedClass : 'all';
+  });
+  const [selectedEkskul, setSelectedEkskul] = useState<string>(() => {
+    return currentUser.role === 'pembina' && currentUser.assignedEkskulId ? currentUser.assignedEkskulId : 'all';
+  });
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync role assignment
+  React.useEffect(() => {
+    if (currentUser.role === 'wali_kelas' && currentUser.assignedClass) {
+      setSelectedClass(currentUser.assignedClass);
+    } else if (currentUser.role === 'pembina' && currentUser.assignedEkskulId) {
+      setSelectedEkskul(currentUser.assignedEkskulId);
+    }
+  }, [currentUser.role, currentUser.assignedClass, currentUser.assignedEkskulId]);
 
   // Editable automated descriptions state mapped by student ID
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
@@ -125,6 +138,47 @@ export const EvaluationView: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Role Notice */}
+      {currentUser.role === 'wali_kelas' && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 rounded-md font-bold bg-amber-200 text-amber-900 text-[11px]">
+              Verifikasi Nilai Rapor &bull; Kelas {currentUser.assignedClass}
+            </span>
+            <span>
+              Menampilkan penilaian dan narasi capaian ekstrakurikuler siswa binaan <strong>Kelas {currentUser.assignedClass}</strong> untuk diintegrasikan ke buku rapor semester.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedClass('all')}
+            className="text-[11px] font-bold text-amber-700 hover:text-amber-900 underline shrink-0 ml-3"
+          >
+            {selectedClass === 'all' ? `Filter Kelas ${currentUser.assignedClass}` : 'Lihat Seluruh Kelas'}
+          </button>
+        </div>
+      )}
+
+      {currentUser.role === 'pembina' && (
+        <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs text-blue-900">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 rounded-md font-bold bg-blue-200 text-blue-900 text-[11px]">
+              Instrumen Penilaian Pembina
+            </span>
+            <span>
+              Penilaian capaian kompetensi anggota cabang binaan Anda. Predikat dan narasi capaian akan otomatis diteruskan ke wali kelas.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedEkskul('all')}
+            className="text-[11px] font-bold text-blue-700 hover:text-blue-900 underline shrink-0 ml-3"
+          >
+            {selectedEkskul === 'all' ? 'Filter Cabang Saya' : 'Lihat Seluruh Cabang'}
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

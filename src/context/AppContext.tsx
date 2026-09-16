@@ -152,22 +152,25 @@ const STORAGE_KEY = 'ALFA_EMS_STORAGE_V1';
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_LOGGED_IN`);
+    // Default to false if never logged in so the user experiences the role-tailored login page
+    return saved === 'true';
+  });
+
   const [currentUser, setCurrentUser] = useState<User>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_USER`);
+    const savedLoggedIn = localStorage.getItem(`${STORAGE_KEY}_LOGGED_IN`);
+    const isAuth = savedLoggedIn === 'true';
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        return { ...u, isAuthenticated: true };
+        return { ...u, isAuthenticated: isAuth };
       } catch (e) {
         console.error(e);
       }
     }
-    return { ...INITIAL_USERS[0], isAuthenticated: true };
-  });
-
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_LOGGED_IN`);
-    return saved !== null ? saved === 'true' : true;
+    return { ...INITIAL_USERS[0], isAuthenticated: isAuth };
   });
 
   const [currentView, setCurrentView] = useState<string>('dashboard');
@@ -367,20 +370,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const login = (user: User) => {
-    setCurrentUser({ ...user, isAuthenticated: true });
+    const updated = { ...user, isAuthenticated: true };
+    setCurrentUser(updated);
     setIsLoggedIn(true);
+    localStorage.setItem(`${STORAGE_KEY}_USER`, JSON.stringify(updated));
+    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, 'true');
     showToast('Login Berhasil', `Selamat datang, ${user.name}!`, 'success');
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     setCurrentUser((prev) => ({ ...prev, isAuthenticated: false }));
+    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, 'false');
     showToast('Logout Berhasil', 'Anda telah keluar dari sistem.', 'info');
   };
 
   const switchRole = (role: User['role']) => {
     const targetUser = INITIAL_USERS.find((u) => u.role === role) || INITIAL_USERS[0];
-    setCurrentUser({ ...targetUser, isAuthenticated: true });
+    const updated = { ...targetUser, isAuthenticated: true };
+    setCurrentUser(updated);
+    setIsLoggedIn(true);
+    localStorage.setItem(`${STORAGE_KEY}_USER`, JSON.stringify(updated));
+    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, 'true');
     showToast('Beralih Peran', `Beralih ke mode ${targetUser.role.replace('_', ' ').toUpperCase()} (${targetUser.name})`, 'info');
   };
 
