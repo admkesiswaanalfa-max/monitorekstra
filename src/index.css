@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+@media print {
+  /* Hide unnecessary UI chrome */
+  .no-print,
+  aside,
+  header,
+  nav,
+  footer,
+  #system-toast-container,
+  button:not(.allow-print) {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  html, body, #root {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Reset layout constraints */
+  .lg\:pl-72 {
+    padding-left: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Target printable document */
+  #official-print-document {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Clean tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  th, td {
+    border-color: #0f172a !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 1cm 1.5cm 1cm;
+  }
+}

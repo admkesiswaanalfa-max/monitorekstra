@@ -1,0 +1,6 @@
+{
+  "name": "ALFA EXTRACURRICULAR MONITORING SYSTEM",
+  "description": "Sistem Monitoring Perkembangan dan Prestasi Ekstrakurikuler Siswa SMP Alfa Ali Masykur",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
