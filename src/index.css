@@ -48,7 +48,10 @@
   }
 
   /* Target printable document */
-  #official-print-document {
+  #student-print-document,
+  #official-print-document,
+  #dashboard-print-document,
+  .student-printable-doc {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -56,6 +59,50 @@
     border: none !important;
     box-shadow: none !important;
     background: #ffffff !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    display: block !important;
+  }
+
+  /* Reset modal clipping for printing */
+  .student-detail-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .student-detail-modal-container {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    display: block !important;
+  }
+
+  .student-detail-modal-body {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
   }
 
   /* Clean tables */

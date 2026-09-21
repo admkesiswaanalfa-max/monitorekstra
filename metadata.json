@@ -1,6 +1,6 @@
 {
-  "name": "ALFA EXTRACURRICULAR MONITORING SYSTEM",
-  "description": "Sistem Monitoring Perkembangan dan Prestasi Ekstrakurikuler Siswa SMP Alfa Ali Masykur",
+  "name": "Sistem Monitoring Ekstrakurikuler SMP Alfa Ali Masykur",
+  "description": "Sistem informasi manajemen, pemantauan, evaluasi capaian, dan pelaporan kegiatan ekstrakurikuler siswa SMP Alfa Ali Masykur Wonosobo Tahun Pelajaran 2026/2027.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

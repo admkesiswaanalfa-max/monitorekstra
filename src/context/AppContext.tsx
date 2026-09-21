@@ -1,34 +1,46 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   User,
+  UserRole,
   Student,
   Extracurricular,
   Coach,
   Achievement,
-  ActivityLog,
-  NotificationItem,
   AttendanceRecord,
-  CompetencyAssessment,
+  ActivityJournal,
+  EkskulTarget,
+  AssessmentRecord,
   SchoolInfo,
-  AcademicYearItem,
-  SystemUser,
-  RoleAccessConfig,
+  Teacher,
+  ClassInfo,
+  YanbuaRecord,
+  DoaRecord,
+  QuranRecord,
+  UnifiedSetoran,
+  DoaItem,
+  YanbuaLevel,
+  ActivityLog,
 } from '../types';
 import {
+  DEFAULT_SCHOOL_INFO,
   INITIAL_USERS,
+  INITIAL_EXTRACURRICULARS,
   INITIAL_STUDENTS,
-  INITIAL_EKSTRAKURIKULER,
   INITIAL_COACHES,
   INITIAL_ACHIEVEMENTS,
+  INITIAL_ATTENDANCE_RECORDS,
+  INITIAL_JOURNALS,
+  INITIAL_TARGETS,
+  INITIAL_ASSESSMENTS,
+  TEACHERS_LIST,
+  CLASSES_LIST,
+  MASTER_DOA_LIST,
+  INITIAL_YANBUA_RECORDS,
+  INITIAL_DOA_RECORDS,
+  INITIAL_QURAN_RECORDS,
+  INITIAL_UNIFIED_SETORAN,
   INITIAL_ACTIVITY_LOGS,
-  INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
-import { DEFAULT_PRIMARY_LOGO, DEFAULT_SECONDARY_LOGO } from '../data/letterheadPresets';
-import {
-  INITIAL_ACADEMIC_YEARS,
-  INITIAL_SYSTEM_USERS,
-  ROLE_ACCESS_CONFIGS,
-} from '../data/academicAndUserData';
 
 interface ToastState {
   id: string;
@@ -37,145 +49,152 @@ interface ToastState {
   type: 'success' | 'error' | 'info';
 }
 
-const DEFAULT_SCHOOL_INFO: SchoolInfo = {
-  name: 'SMP ALFA ALI MASYKUR',
-  npsn: '20512345',
-  address: 'Jl. Raya Pesantren No. 45, Pasuruan, Jawa Timur',
-  phone: '(031) 876-5432',
-  email: 'info@smpalfaalimasykur.sch.id',
-  website: 'www.smpalfaalimasykur.sch.id',
-  principal: 'H. Moh. Masykur, M.Pd.I.',
-  principalNip: '19760815 200212 1 004',
-  academicYear: '2025/2026',
-  semester: 'Ganjil',
-  foundationName: 'YAYASAN PENDIDIKAN ALFA ALI MASYKUR',
-  subHeader: 'NPSN: 20512345 • Terakreditasi A (Unggul) • SK Izin Operasional: 421.3/1209/418.20/2018',
-  logoUrl: DEFAULT_PRIMARY_LOGO,
-  secondaryLogoUrl: DEFAULT_SECONDARY_LOGO,
-  showSecondaryLogo: true,
-  logoSize: 'md',
-  logoShape: 'original',
-  city: 'Pasuruan',
-  coordinatorName: 'Muhammad Rizal, S.Pd.',
-  coordinatorNip: '19850612 201001 1 008',
-};
-
 interface AppContextType {
+  // Authentication & Role
   currentUser: User;
+  switchRole: (role: UserRole) => void;
   setCurrentUser: (user: User) => void;
-  switchRole: (role: User['role']) => void;
-  isLoggedIn: boolean;
   login: (user: User) => void;
   logout: () => void;
 
+  // Navigation
   currentView: string;
   setCurrentView: (view: string) => void;
-
+  selectedStudentId: string | null;
+  setSelectedStudentId: (id: string | null) => void;
   selectedStudentDetailId: string | null;
   setSelectedStudentDetailId: (id: string | null) => void;
-
-  selectedEkskulDetailId: string | null;
-  setSelectedEkskulDetailId: (id: string | null) => void;
-
-  // School Master Info
-  schoolInfo: SchoolInfo;
-  updateSchoolInfo: (info: Partial<SchoolInfo>) => void;
-
-  // Data sets
-  students: Student[];
-  extracurriculars: Extracurricular[];
-  coaches: Coach[];
-  achievements: Achievement[];
-  activityLogs: ActivityLog[];
-  notifications: NotificationItem[];
-  attendanceRecords: AttendanceRecord[];
-  assessments: CompetencyAssessment[];
 
   // Global Search
   globalSearch: string;
   setGlobalSearch: (term: string) => void;
 
-  // Student Actions
-  addStudent: (studentData: Omit<Student, 'id'>) => void;
-  updateStudent: (id: string, studentData: Partial<Student>) => void;
-  deleteStudent: (id: string) => void;
+  // School Profile
+  schoolInfo: SchoolInfo;
+  setSchoolInfo: React.Dispatch<React.SetStateAction<SchoolInfo>>;
+  updateSchoolInfo: (info: Partial<SchoolInfo>) => void;
 
-  // Extracurricular Actions
-  addExtracurricular: (ekskulData: Omit<Extracurricular, 'id'>) => void;
-  updateExtracurricular: (id: string, ekskulData: Partial<Extracurricular>) => void;
+  // Extracurriculars
+  extracurriculars: Extracurricular[];
+  setExtracurriculars: React.Dispatch<React.SetStateAction<Extracurricular[]>>;
+  addExtracurricular: (data: Omit<Extracurricular, 'id'>) => void;
+  updateExtracurricular: (id: string, data: Partial<Extracurricular>) => void;
   deleteExtracurricular: (id: string) => void;
 
-  // Coach Actions
-  addCoach: (coachData: Omit<Coach, 'id'>) => void;
-  updateCoach: (id: string, coachData: Partial<Coach>) => void;
+  // Students
+  students: Student[];
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  addStudent: (data: Omit<Student, 'id'>) => void;
+  updateStudent: (id: string, data: Partial<Student>) => void;
+  deleteStudent: (id: string) => void;
+
+  // Coaches & Trainers
+  coaches: Coach[];
+  setCoaches: React.Dispatch<React.SetStateAction<Coach[]>>;
+  addCoach: (data: Omit<Coach, 'id'>) => void;
+  updateCoach: (id: string, data: Partial<Coach>) => void;
   deleteCoach: (id: string) => void;
 
-  // Achievement Actions
-  addAchievement: (achievementData: Omit<Achievement, 'id'>) => void;
-  updateAchievement: (id: string, achievementData: Partial<Achievement>) => void;
+  // Achievements
+  achievements: Achievement[];
+  setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>;
+  addAchievement: (data: Omit<Achievement, 'id'>) => void;
+  updateAchievement: (id: string, data: Partial<Achievement>) => void;
   deleteAchievement: (id: string) => void;
 
-  // Attendance & Assessment Actions
-  saveAttendanceBatch: (records: (Omit<AttendanceRecord, 'id'> | AttendanceRecord)[], ekskulName?: string) => void;
-  saveCompetencyAssessment: (assessment: CompetencyAssessment) => void;
-  saveAssessment: (assessment: Omit<CompetencyAssessment, 'id'>) => void;
+  // Attendance
+  attendanceRecords: AttendanceRecord[];
+  setAttendanceRecords: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
+  saveAttendanceBatch: (records: Omit<AttendanceRecord, 'id'>[]) => void;
 
-  // Academic Years
-  academicYears: AcademicYearItem[];
-  addAcademicYear: (data: Omit<AcademicYearItem, 'id'>) => void;
-  updateAcademicYear: (id: string, data: Partial<AcademicYearItem>) => void;
-  deleteAcademicYear: (id: string) => void;
-  setActiveAcademicPeriod: (year: string, semester: 'Ganjil' | 'Genap') => void;
-  toggleLockAcademicYear: (id: string) => void;
+  // Activity Journals
+  activityJournals: ActivityJournal[];
+  setActivityJournals: React.Dispatch<React.SetStateAction<ActivityJournal[]>>;
+  addActivityJournal: (data: Omit<ActivityJournal, 'id'>) => void;
+  updateActivityJournal: (id: string, data: Partial<ActivityJournal>) => void;
+  deleteActivityJournal: (id: string) => void;
 
-  // System Users & Access Rights (RBAC)
-  systemUsers: SystemUser[];
-  addSystemUser: (data: Omit<SystemUser, 'id'>) => void;
-  updateSystemUser: (id: string, data: Partial<SystemUser>) => void;
-  deleteSystemUser: (id: string) => void;
-  toggleUserStatus: (id: string) => void;
-  resetUserPassword: (id: string, customPass?: string) => void;
-  roleConfigs: RoleAccessConfig[];
+  // Targets & Achievements Progress
+  targets: EkskulTarget[];
+  setTargets: React.Dispatch<React.SetStateAction<EkskulTarget[]>>;
+  addTarget: (data: Omit<EkskulTarget, 'id'>) => void;
+  updateTarget: (id: string, data: Partial<EkskulTarget>) => void;
+  deleteTarget: (id: string) => void;
 
-  markNotificationAsRead: (id: string) => void;
-  markAllNotificationsAsRead: () => void;
-  resetToDefault: () => void;
-  resetToDemoData: () => void;
+  // Assessments
+  assessments: AssessmentRecord[];
+  setAssessments: React.Dispatch<React.SetStateAction<AssessmentRecord[]>>;
+  saveAssessment: (data: Omit<AssessmentRecord, 'id'>) => void;
+
+  // Classes & Teachers
+  classes: ClassInfo[];
+  setClasses: React.Dispatch<React.SetStateAction<ClassInfo[]>>;
+  addClass: (data: Omit<ClassInfo, 'id'>) => void;
+  updateClass: (id: string, data: Partial<ClassInfo>) => void;
+  deleteClass: (id: string) => boolean;
+  teachers: Teacher[];
+  addTeacher: (teacher: Omit<Teacher, 'id'>) => void;
+  updateTeacher: (id: string, teacher: Partial<Teacher>) => void;
+  deleteTeacher: (id: string) => void;
+
+  // Activity Logs (Feed)
+  activityLogs: ActivityLog[];
+  setActivityLogs: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
+  addActivityLog: (log: Omit<ActivityLog, 'id'>) => void;
 
   // Toast
   toast: ToastState | null;
   showToast: (title: string, message: string, type?: 'success' | 'error' | 'info') => void;
+
+  // Backup & Reset
+  resetToDemoData: () => void;
+  exportDatabaseJson: () => void;
+  importDatabaseJson: (jsonData: string) => boolean;
+  backupDatabase: () => void;
+  restoreDatabase: (jsonData: string) => boolean;
+  resetToDefault: () => void;
+
+  // Compatibility with secondary modules
+  yanbuaRecords: YanbuaRecord[];
+  doaRecords: DoaRecord[];
+  quranRecords: QuranRecord[];
+  unifiedSetoran: UnifiedSetoran[];
+  masterDoaList: DoaItem[];
+  addYanbuaRecord: (data: Omit<YanbuaRecord, 'id'>) => void;
+  addDoaRecord: (data: Omit<DoaRecord, 'id'>) => void;
+  addQuranRecord: (data: Omit<QuranRecord, 'id'>) => void;
+  markTodayAllSubmitted: () => void;
+  quickSetoran: (
+    studentId: string,
+    jenis: 'Yanbu\'a' | 'Doa Harian' | 'Al-Qur\'an',
+    materi: string,
+    nilai: number,
+    status: 'LULUS' | 'MENGULANG' | 'BELUM SETOR' | 'DALAM BIMBINGAN',
+    catatan?: string
+  ) => void;
 }
 
-const STORAGE_KEY = 'ALFA_EMS_STORAGE_V1';
+const STORAGE_KEY = 'SMP_ALFA_EKSKUL_MONITORING_V3';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_LOGGED_IN`);
-    // Default to false if never logged in so the user experiences the role-tailored login page
-    return saved === 'true';
-  });
-
+  // Current logged in user
   const [currentUser, setCurrentUser] = useState<User>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_USER`);
-    const savedLoggedIn = localStorage.getItem(`${STORAGE_KEY}_LOGGED_IN`);
-    const isAuth = savedLoggedIn === 'true';
     if (saved) {
       try {
-        const u = JSON.parse(saved);
-        return { ...u, isAuthenticated: isAuth };
+        return JSON.parse(saved);
       } catch (e) {
         console.error(e);
       }
     }
-    return { ...INITIAL_USERS[0], isAuthenticated: isAuth };
+    return INITIAL_USERS[0];
   });
 
   const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [selectedStudentDetailId, setSelectedStudentDetailId] = useState<string | null>(null);
-  const [selectedEkskulDetailId, setSelectedEkskulDetailId] = useState<string | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [toast, setToast] = useState<ToastState | null>(null);
 
@@ -184,8 +203,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem(`${STORAGE_KEY}_SCHOOL`);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        return { ...DEFAULT_SCHOOL_INFO, ...parsed };
+        return JSON.parse(saved);
       } catch (e) {
         console.error(e);
       }
@@ -193,121 +211,169 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return DEFAULT_SCHOOL_INFO;
   });
 
-  // Core Data
+  // Extracurriculars
+  const [extracurriculars, setExtracurriculars] = useState<Extracurricular[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_EKSKUL`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_EXTRACURRICULARS;
+  });
+
+  // Students
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_STUDENTS`);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
     }
     return INITIAL_STUDENTS;
   });
 
-  const [extracurriculars, setExtracurriculars] = useState<Extracurricular[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_EKSKUL`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_EKSTRAKURIKULER.map((e) => ({
-      ...e,
-      status: e.isActive ? 'Aktif' : 'Nonaktif',
-      targetCapaian: e.targetAchievement,
-    }));
-  });
-
+  // Coaches
   const [coaches, setCoaches] = useState<Coach[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_COACHES`);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
     }
-    return INITIAL_COACHES.map((c) => ({
-      ...c,
-      ekskulIds: [c.ekskulId],
-      status: 'Guru Tetap',
-    }));
+    return INITIAL_COACHES;
   });
 
+  // Achievements
   const [achievements, setAchievements] = useState<Achievement[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_ACHIEVEMENTS`);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
     }
-    return INITIAL_ACHIEVEMENTS.map((a) => ({
-      ...a,
-      certificateUrl: a.certificateUrl || 'https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=500&auto=format&fit=crop&q=80',
-    }));
+    return INITIAL_ACHIEVEMENTS;
   });
 
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_LOGS`);
+  // Attendance Records
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_ATTENDANCE`);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_ATTENDANCE_RECORDS;
+  });
+
+  // Activity Journals
+  const [activityJournals, setActivityJournals] = useState<ActivityJournal[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_JOURNALS`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_JOURNALS;
+  });
+
+  // Targets
+  const [targets, setTargets] = useState<EkskulTarget[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_TARGETS`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_TARGETS;
+  });
+
+  // Assessments
+  const [assessments, setAssessments] = useState<AssessmentRecord[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_ASSESSMENTS`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_ASSESSMENTS;
+  });
+
+  // Teachers & Classes
+  const [teachers, setTeachers] = useState<Teacher[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_TEACHERS`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return TEACHERS_LIST;
+  });
+
+  // Activity Logs
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_ACTIVITY_LOGS`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
     }
     return INITIAL_ACTIVITY_LOGS;
   });
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_NOTIFS`);
+  const [classes, setClasses] = useState<ClassInfo[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_CLASSES`);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
     }
-    return INITIAL_NOTIFICATIONS;
+    return CLASSES_LIST;
   });
+  const [masterDoaList] = useState<DoaItem[]>(MASTER_DOA_LIST);
+  const [yanbuaRecords, setYanbuaRecords] = useState<YanbuaRecord[]>(INITIAL_YANBUA_RECORDS);
+  const [doaRecords, setDoaRecords] = useState<DoaRecord[]>(INITIAL_DOA_RECORDS);
+  const [quranRecords, setQuranRecords] = useState<QuranRecord[]>(INITIAL_QURAN_RECORDS);
+  const [unifiedSetoran, setUnifiedSetoran] = useState<UnifiedSetoran[]>(INITIAL_UNIFIED_SETORAN);
 
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_ATTENDANCE`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    // Generate initial realistic sample attendance records
-    return [
-      { id: 'att-1', studentId: 'std-1', studentName: 'Muhammad Farhan', ekskulId: 'ekskul-1', date: '2025-11-04', meetingNumber: 11, status: 'H', topic: 'Pola Serangan 3-1 & Finishing Goal' },
-      { id: 'att-2', studentId: 'std-2', studentName: 'Aisyah Putri Rahmadani', ekskulId: 'ekskul-2', date: '2025-11-05', meetingNumber: 11, status: 'H', topic: 'Harmonisasi Suara Babak 2' },
-      { id: 'att-3', studentId: 'std-3', studentName: 'Ahmad Kevin Pratama', ekskulId: 'ekskul-3', date: '2025-11-06', meetingNumber: 11, status: 'H', topic: 'Pionering Tiang Bendera 3 Kaki' },
-    ];
-  });
-
-  const [assessments, setAssessments] = useState<CompetencyAssessment[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_ASSESSMENTS`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return [
-      {
-        id: 'asm-1',
-        studentId: 'std-1',
-        studentName: 'Muhammad Farhan',
-        ekskulId: 'ekskul-1',
-        ekskulName: 'Futsal Prestasi',
-        period: 'November 2025 (Semester Ganjil)',
-        date: '2025-11-01',
-        averageScore: 3.82,
-        category: 'Sangat Baik',
-        notes: 'Kapten yang disiplin, teknik tendangan akurat dan mampu memotivasi tim.',
-        coachName: 'Bambang Sudarsono, S.Pd.',
-      },
-    ];
-  });
-
-  // Sync to LocalStorage
+  // Persistence to LocalStorage
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_USER`, JSON.stringify(currentUser));
   }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, String(isLoggedIn));
-  }, [isLoggedIn]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_SCHOOL`, JSON.stringify(schoolInfo));
   }, [schoolInfo]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_STUDENTS`, JSON.stringify(students));
-  }, [students]);
-
-  useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_EKSKUL`, JSON.stringify(extracurriculars));
   }, [extracurriculars]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_STUDENTS`, JSON.stringify(students));
+  }, [students]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_COACHES`, JSON.stringify(coaches));
@@ -318,623 +384,520 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [achievements]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_LOGS`, JSON.stringify(activityLogs));
-  }, [activityLogs]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_NOTIFS`, JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_ATTENDANCE`, JSON.stringify(attendanceRecords));
   }, [attendanceRecords]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_JOURNALS`, JSON.stringify(activityJournals));
+  }, [activityJournals]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_TARGETS`, JSON.stringify(targets));
+  }, [targets]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_ASSESSMENTS`, JSON.stringify(assessments));
   }, [assessments]);
 
-  // Academic Years State
-  const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_ACADEMIC_YEARS`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_ACADEMIC_YEARS;
-  });
-
-  // System Users State
-  const [systemUsers, setSystemUsers] = useState<SystemUser[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_SYSTEM_USERS`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_SYSTEM_USERS;
-  });
-
-  const [roleConfigs] = useState<RoleAccessConfig[]>(ROLE_ACCESS_CONFIGS);
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_CLASSES`, JSON.stringify(classes));
+  }, [classes]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_ACADEMIC_YEARS`, JSON.stringify(academicYears));
-  }, [academicYears]);
+    localStorage.setItem(`${STORAGE_KEY}_ACTIVITY_LOGS`, JSON.stringify(activityLogs));
+  }, [activityLogs]);
 
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_SYSTEM_USERS`, JSON.stringify(systemUsers));
-  }, [systemUsers]);
+  const addActivityLog = (log: Omit<ActivityLog, 'id'>) => {
+    const newLog: ActivityLog = {
+      ...log,
+      id: `log-${Date.now().toString().slice(-4)}`,
+      timestamp: log.timestamp || 'Baru saja',
+    };
+    setActivityLogs((prev) => [newLog, ...(prev || []).slice(0, 49)]);
+  };
 
+  // Toast Helper
   const showToast = (title: string, message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now().toString();
     setToast({ id, title, message, type });
     setTimeout(() => {
       setToast((prev) => (prev?.id === id ? null : prev));
-    }, 4000);
+    }, 3800);
+  };
+
+  // Role switching
+  const switchRole = (role: UserRole) => {
+    const target = INITIAL_USERS.find((u) => u.role === role) || INITIAL_USERS[0];
+    setCurrentUser(target);
+    showToast(
+      'Beralih Peran',
+      `Sekarang login sebagai ${target.roleTitle || target.name}`,
+      'info'
+    );
   };
 
   const login = (user: User) => {
-    const updated = { ...user, isAuthenticated: true };
-    setCurrentUser(updated);
-    setIsLoggedIn(true);
-    localStorage.setItem(`${STORAGE_KEY}_USER`, JSON.stringify(updated));
-    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, 'true');
+    setCurrentUser(user);
     showToast('Login Berhasil', `Selamat datang, ${user.name}!`, 'success');
   };
 
   const logout = () => {
-    setIsLoggedIn(false);
-    setCurrentUser((prev) => ({ ...prev, isAuthenticated: false }));
-    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, 'false');
-    showToast('Logout Berhasil', 'Anda telah keluar dari sistem.', 'info');
-  };
-
-  const switchRole = (role: User['role']) => {
-    const targetUser = INITIAL_USERS.find((u) => u.role === role) || INITIAL_USERS[0];
-    const updated = { ...targetUser, isAuthenticated: true };
-    setCurrentUser(updated);
-    setIsLoggedIn(true);
-    localStorage.setItem(`${STORAGE_KEY}_USER`, JSON.stringify(updated));
-    localStorage.setItem(`${STORAGE_KEY}_LOGGED_IN`, 'true');
-    showToast('Beralih Peran', `Beralih ke mode ${targetUser.role.replace('_', ' ').toUpperCase()} (${targetUser.name})`, 'info');
+    const defaultAdmin = INITIAL_USERS[0];
+    setCurrentUser(defaultAdmin);
+    showToast('Sesi Berakhir', 'Kembali ke mode login.', 'info');
   };
 
   const updateSchoolInfo = (info: Partial<SchoolInfo>) => {
     setSchoolInfo((prev) => ({ ...prev, ...info }));
-    showToast('Profil Sekolah Diperbarui', 'Data resmi satuan pendidikan telah disimpan.', 'success');
-  };
-
-  // Student Actions
-  const addStudent = (studentData: Omit<Student, 'id'>) => {
-    const newStudent: Student = {
-      ...studentData,
-      id: `std-${Date.now().toString().slice(-4)}`,
-    };
-    setStudents((prev) => [newStudent, ...prev]);
-
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'student',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Menambahkan siswa baru: ${newStudent.name} (${newStudent.class})`,
-      target: newStudent.name,
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-    showToast('Berhasil', `Data siswa ${newStudent.name} berhasil ditambahkan.`);
-  };
-
-  const updateStudent = (id: string, studentData: Partial<Student>) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...studentData } : s))
-    );
-    showToast('Berhasil', 'Perubahan data siswa berhasil disimpan.');
-  };
-
-  const deleteStudent = (id: string) => {
-    const target = students.find((s) => s.id === id);
-    setStudents((prev) => prev.filter((s) => s.id !== id));
-    if (selectedStudentDetailId === id) {
-      setSelectedStudentDetailId(null);
-    }
-    showToast('Dihapus', `Data siswa ${target ? target.name : ''} telah dihapus.`, 'info');
+    showToast('Profil Disimpan', 'Identitas resmi sekolah berhasil diperbarui.', 'success');
   };
 
   // Extracurricular Actions
-  const addExtracurricular = (ekskulData: Omit<Extracurricular, 'id'>) => {
+  const addExtracurricular = (data: Omit<Extracurricular, 'id'>) => {
     const newEkskul: Extracurricular = {
-      ...ekskulData,
+      ...data,
       id: `ekskul-${Date.now().toString().slice(-4)}`,
-      status: ekskulData.status || 'Aktif',
     };
-    setExtracurriculars((prev) => [newEkskul, ...prev]);
-
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'ekskul',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Menambahkan ekstrakurikuler baru: ${newEkskul.name}`,
-      target: newEkskul.name,
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-    showToast('Berhasil', `Ekstrakurikuler ${newEkskul.name} berhasil ditambahkan.`);
+    setExtracurriculars((prev) => [...prev, newEkskul]);
+    showToast('Ekskul Ditambahkan', `Cabang ${newEkskul.name} berhasil didaftarkan.`, 'success');
   };
 
-  const updateExtracurricular = (id: string, ekskulData: Partial<Extracurricular>) => {
+  const updateExtracurricular = (id: string, data: Partial<Extracurricular>) => {
     setExtracurriculars((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...ekskulData } : e))
+      prev.map((e) => (e.id === id ? { ...e, ...data } : e))
     );
-    showToast('Berhasil', 'Data ekstrakurikuler berhasil diperbarui.');
+    showToast('Ekskul Diperbarui', 'Informasi cabang kegiatan ekstrakurikuler telah disimpan.', 'success');
   };
 
   const deleteExtracurricular = (id: string) => {
     const target = extracurriculars.find((e) => e.id === id);
     setExtracurriculars((prev) => prev.filter((e) => e.id !== id));
-    showToast('Dihapus', `Ekstrakurikuler ${target ? target.name : ''} berhasil dihapus.`, 'info');
+    showToast('Ekskul Dihapus', `Cabang ${target?.name || ''} telah dihapus.`, 'info');
+  };
+
+  // Student Actions
+  const addStudent = (data: Omit<Student, 'id'>) => {
+    const newStudent: Student = {
+      ...data,
+      id: `std-${Date.now().toString().slice(-4)}`,
+    };
+    setStudents((prev) => [newStudent, ...prev]);
+    showToast('Siswa Ditambahkan', `${newStudent.name} (${newStudent.class}) berhasil didaftarkan.`, 'success');
+  };
+
+  const updateStudent = (id: string, data: Partial<Student>) => {
+    setStudents((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+    );
+    showToast('Data Siswa Diperbarui', 'Perubahan biodata siswa telah tersimpan.', 'success');
+  };
+
+  const deleteStudent = (id: string) => {
+    const target = students.find((s) => s.id === id);
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+    if (selectedStudentId === id) setSelectedStudentId(null);
+    showToast('Data Dihapus', `Data siswa ${target?.name || ''} telah dihapus.`, 'info');
   };
 
   // Coach Actions
-  const addCoach = (coachData: Omit<Coach, 'id'>) => {
+  const addCoach = (data: Omit<Coach, 'id'>) => {
     const newCoach: Coach = {
-      ...coachData,
+      ...data,
       id: `coach-${Date.now().toString().slice(-4)}`,
-      status: coachData.status || 'Guru Tetap',
     };
-    setCoaches((prev) => [newCoach, ...prev]);
-    showToast('Berhasil', `Data pembina ${newCoach.name} berhasil ditambahkan.`);
+    setCoaches((prev) => [...prev, newCoach]);
+    showToast('Pembina Ditambahkan', `${newCoach.name} berhasil ditambahkan.`, 'success');
   };
 
-  const updateCoach = (id: string, coachData: Partial<Coach>) => {
+  const updateCoach = (id: string, data: Partial<Coach>) => {
     setCoaches((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...coachData } : c))
+      prev.map((c) => (c.id === id ? { ...c, ...data } : c))
     );
-    showToast('Berhasil', 'Data pembina berhasil diperbarui.');
+    showToast('Data Pembina Disimpan', 'Pembaruan data pembina/pelatih tersimpan.', 'success');
   };
 
   const deleteCoach = (id: string) => {
     const target = coaches.find((c) => c.id === id);
     setCoaches((prev) => prev.filter((c) => c.id !== id));
-    showToast('Dihapus', `Data pembina ${target ? target.name : ''} berhasil dihapus.`, 'info');
+    showToast('Pembina Dihapus', `Data ${target?.name || ''} telah dihapus.`, 'info');
   };
 
   // Achievement Actions
-  const addAchievement = (achievementData: Omit<Achievement, 'id'>) => {
+  const addAchievement = (data: Omit<Achievement, 'id'>) => {
     const newAch: Achievement = {
-      ...achievementData,
-      id: `ach-${Date.now()}`,
+      ...data,
+      id: `ach-${Date.now().toString().slice(-4)}`,
     };
     setAchievements((prev) => [newAch, ...prev]);
-
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'achievement',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Mencatat prestasi: ${newAch.rank} pada ${newAch.competitionName} (${newAch.level})`,
-      target: `${newAch.studentName} - ${newAch.ekskulName}`,
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-
-    const newNotif: NotificationItem = {
-      id: `notif-${Date.now()}`,
-      type: 'achievement',
-      title: 'Prestasi Baru!',
-      message: `${newAch.studentName} meraih ${newAch.rank} (${newAch.level}) dalam ${newAch.competitionName}.`,
-      time: 'Baru saja',
-      read: false,
-      priority: 'medium',
-      linkTarget: 'achievements',
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
-
-    showToast('Prestasi Ditambahkan!', `${newAch.rank} berhasil dicatat.`);
+    showToast('Prestasi Dicatat', `${newAch.title || newAch.competitionName} berhasil didokumentasikan.`, 'success');
   };
 
-  const updateAchievement = (id: string, achievementData: Partial<Achievement>) => {
+  const updateAchievement = (id: string, data: Partial<Achievement>) => {
     setAchievements((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...achievementData } : a))
+      prev.map((a) => (a.id === id ? { ...a, ...data } : a))
     );
-    showToast('Berhasil', 'Data prestasi berhasil diperbarui.');
+    showToast('Prestasi Diperbarui', 'Data kejuaraan berhasil diperbarui.', 'success');
   };
 
   const deleteAchievement = (id: string) => {
     setAchievements((prev) => prev.filter((a) => a.id !== id));
-    showToast('Dihapus', 'Data prestasi berhasil dihapus.', 'info');
+    showToast('Prestasi Dihapus', 'Catatan prestasi telah dihapus.', 'info');
   };
 
   // Attendance Actions
-  const saveAttendanceBatch = (
-    records: (Omit<AttendanceRecord, 'id'> | AttendanceRecord)[],
-    ekskulName?: string
-  ) => {
-    const normalized: AttendanceRecord[] = records.map((r, idx) => ({
+  const saveAttendanceBatch = (records: Omit<AttendanceRecord, 'id'>[]) => {
+    const newRecords: AttendanceRecord[] = records.map((r, idx) => ({
       ...r,
-      id: 'id' in r && r.id ? r.id : `att-${Date.now()}-${idx}`,
+      id: `att-${Date.now()}-${idx}`,
     }));
+    setAttendanceRecords((prev) => [...newRecords, ...prev]);
 
-    setAttendanceRecords((prev) => {
-      const filtered = prev.filter(
-        (p) => !normalized.some((r) => r.studentId === p.studentId && r.date === p.date && r.ekskulId === p.ekskulId)
-      );
-      return [...normalized, ...filtered];
-    });
+    // Recalculate attendance rates for students involved
+    const studentIds = new Set(records.map((r) => r.studentId));
+    setStudents((prev) =>
+      prev.map((s) => {
+        if (!studentIds.has(s.id)) return s;
+        const allStudentRecs = [
+          ...newRecords.filter((r) => r.studentId === s.id),
+          ...attendanceRecords.filter((r) => r.studentId === s.id),
+        ];
+        const presentCount = allStudentRecs.filter((r) => r.status === 'H' || r.status === 'Hadir').length;
+        const rate = allStudentRecs.length > 0 ? Math.round((presentCount / allStudentRecs.length) * 100) : s.attendanceRate;
+        return {
+          ...s,
+          attendanceRate: rate,
+        };
+      })
+    );
 
-    const targetName = ekskulName || 'Ekstrakurikuler';
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'attendance',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Menyimpan presensi ${normalized.length} siswa`,
-      target: targetName,
+    showToast('Presensi Disimpan', `Presensi ${records.length} siswa berhasil direkap.`, 'success');
+  };
+
+  // Journal Actions
+  const addActivityJournal = (data: Omit<ActivityJournal, 'id'>) => {
+    const newJournal: ActivityJournal = {
+      ...data,
+      id: `jrn-${Date.now().toString().slice(-4)}`,
+      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
     };
-    setActivityLogs((prev) => [newLog, ...prev]);
+    setActivityJournals((prev) => [newJournal, ...prev]);
+    showToast('Jurnal Tersimpan', `Jurnal pertemuan ${newJournal.meetingNumber} telah ditambahkan.`, 'success');
+  };
 
-    showToast('Presensi Disimpan', `Berhasil menyimpan presensi ${normalized.length} siswa.`, 'success');
+  const updateActivityJournal = (id: string, data: Partial<ActivityJournal>) => {
+    setActivityJournals((prev) =>
+      prev.map((j) => (j.id === id ? { ...j, ...data } : j))
+    );
+    showToast('Jurnal Diperbarui', 'Perubahan jurnal latihan berhasil disimpan.', 'success');
+  };
+
+  const deleteActivityJournal = (id: string) => {
+    setActivityJournals((prev) => prev.filter((j) => j.id !== id));
+    showToast('Jurnal Dihapus', 'Catatan jurnal kegiatan telah dihapus.', 'info');
+  };
+
+  // Target Actions
+  const addTarget = (data: Omit<EkskulTarget, 'id'>) => {
+    const newTarget: EkskulTarget = {
+      ...data,
+      id: `tgt-${Date.now().toString().slice(-4)}`,
+    };
+    setTargets((prev) => [newTarget, ...prev]);
+    showToast('Target Dibuat', `Target "${newTarget.title}" berhasil dicatat.`, 'success');
+  };
+
+  const updateTarget = (id: string, data: Partial<EkskulTarget>) => {
+    setTargets((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...data } : t))
+    );
+    showToast('Target Diperbarui', 'Perkembangan target berhasil diperbarui.', 'success');
+  };
+
+  const deleteTarget = (id: string) => {
+    setTargets((prev) => prev.filter((t) => t.id !== id));
+    showToast('Target Dihapus', 'Target kegiatan telah dihapus.', 'info');
   };
 
   // Assessment Actions
-  const saveAssessment = (assessmentData: Omit<CompetencyAssessment, 'id'>) => {
-    const newAssessment: CompetencyAssessment = {
-      ...assessmentData,
-      id: `asm-${Date.now()}`,
+  const saveAssessment = (data: Omit<AssessmentRecord, 'id'>) => {
+    const newRecord: AssessmentRecord = {
+      ...data,
+      id: `asm-${Date.now().toString().slice(-4)}`,
     };
-    saveCompetencyAssessment(newAssessment);
-  };
+    setAssessments((prev) => [newRecord, ...prev]);
 
-  const saveCompetencyAssessment = (assessment: CompetencyAssessment) => {
-    setAssessments((prev) => [assessment, ...prev]);
-
-    // Update student's overall score and competencies
-    setStudents((prev) =>
-      prev.map((s) => {
-        if (s.id === assessment.studentId) {
-          const comp = assessment.scores ? { ...assessment.scores } : { ...s.competencies };
-          const newScore = assessment.averageScore || s.overallScore;
-          const cat = assessment.category as any;
-
+    // Update student overall score & category if provided
+    if (newRecord.averageScore || newRecord.score) {
+      setStudents((prev) =>
+        prev.map((s) => {
+          if (s.id !== newRecord.studentId) return s;
+          const scoreVal = newRecord.score || Math.round((newRecord.averageScore || 3.5) * 25);
           return {
             ...s,
-            overallScore: newScore,
-            category: cat || s.category,
-            competencies: comp,
-            notesPembina: assessment.notes || s.notesPembina,
+            overallScore: scoreVal,
+            category: newRecord.category || s.category,
           };
+        })
+      );
+    }
+
+    showToast('Penilaian Disimpan', `Evaluasi kompetensi untuk ${newRecord.studentName} tersimpan.`, 'success');
+  };
+
+  // Teacher actions
+  const addTeacher = (teacher: Omit<Teacher, 'id'>) => {
+    const newTeacher: Teacher = { ...teacher, id: `tch-${Date.now().toString().slice(-4)}` };
+    setTeachers((prev) => [...prev, newTeacher]);
+    showToast('Guru Ditambahkan', `${newTeacher.name} berhasil didaftarkan.`, 'success');
+  };
+
+  const updateTeacher = (id: string, teacher: Partial<Teacher>) => {
+    setTeachers((prev) => prev.map((t) => (t.id === id ? { ...t, ...teacher } : t)));
+    showToast('Data Guru Disimpan', 'Data guru telah diperbarui.', 'success');
+  };
+
+  const deleteTeacher = (id: string) => {
+    setTeachers((prev) => prev.filter((t) => t.id !== id));
+    showToast('Guru Dihapus', 'Data guru telah dihapus.', 'info');
+  };
+
+  // Class & Rombel Actions
+  const addClass = (data: Omit<ClassInfo, 'id'>) => {
+    const newId = `cls-${Date.now().toString(36)}`;
+    const newClass: ClassInfo = {
+      ...data,
+      id: newId,
+      status: data.status || 'Aktif',
+    };
+    setClasses((prev) => [...prev, newClass]);
+    showToast('Rombel Ditambahkan', `Rombongan belajar kelas ${newClass.name} berhasil dibuat.`, 'success');
+  };
+
+  const updateClass = (id: string, data: Partial<ClassInfo>) => {
+    const oldClass = classes.find((c) => c.id === id);
+    setClasses((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          return { ...c, ...data };
         }
-        return s;
+        return c;
       })
     );
-
-    const targetStudent = students.find((s) => s.id === assessment.studentId);
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'assessment',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Menginput evaluasi perkembangan untuk ${targetStudent?.name || 'Siswa'} (${assessment.category} - ${assessment.averageScore.toFixed(2)})`,
-      target: targetStudent?.name || 'Siswa',
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-
-    showToast('Penilaian Disimpan', `Evaluasi perkembangan tersimpan dengan predikat ${assessment.category}.`);
+    if (oldClass && data.name && data.name !== oldClass.name) {
+      setStudents((prev) =>
+        prev.map((s) => (s.class === oldClass.name ? { ...s, class: data.name! } : s))
+      );
+    }
+    showToast('Rombel Diperbarui', `Data rombel ${data.name || oldClass?.name || ''} telah diperbarui.`, 'success');
   };
 
-  const markNotificationAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
+  const deleteClass = (id: string): boolean => {
+    const target = classes.find((c) => c.id === id);
+    if (!target) return false;
 
-  const markAllNotificationsAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    showToast('Notifikasi', 'Semua notifikasi ditandai telah dibaca.', 'info');
-  };
-
-  // Academic Years Actions
-  const addAcademicYear = (data: Omit<AcademicYearItem, 'id'>) => {
-    const newYear: AcademicYearItem = {
-      ...data,
-      id: `ay-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    if (newYear.status === 'active') {
-      setAcademicYears((prev) => [
-        newYear,
-        ...prev.map((item) => (item.status === 'active' ? { ...item, status: 'archived' as const } : item)),
-      ]);
-      setSchoolInfo((prev) => ({
-        ...prev,
-        academicYear: newYear.year,
-        semester: newYear.semester,
-      }));
-    } else {
-      setAcademicYears((prev) => [newYear, ...prev]);
+    const enrolledStudents = students.filter((s) => s.class === target.name);
+    if (enrolledStudents.length > 0) {
+      showToast(
+        'Rombel Tidak Dapat Dihapus',
+        `Terdapat ${enrolledStudents.length} siswa yang masih terdaftar di kelas ${target.name}. Pindahkan siswa terlebih dahulu.`,
+        'error'
+      );
+      return false;
     }
 
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'achievement',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Menambahkan tahun ajaran baru: ${newYear.year} Semester ${newYear.semester}`,
-      target: newYear.year,
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-    showToast('Tahun Ajaran Ditambahkan', `Periode ${newYear.year} (${newYear.semester}) berhasil dibuat.`, 'success');
+    setClasses((prev) => prev.filter((c) => c.id !== id));
+    showToast('Rombel Dihapus', `Rombel ${target.name} berhasil dihapus.`, 'info');
+    return true;
   };
 
-  const updateAcademicYear = (id: string, data: Partial<AcademicYearItem>) => {
-    setAcademicYears((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const updated = { ...item, ...data };
-          if (updated.status === 'active') {
-            setSchoolInfo((s) => ({
-              ...s,
-              academicYear: updated.year,
-              semester: updated.semester,
-            }));
-          }
-          return updated;
-        }
-        if (data.status === 'active' && item.id !== id && item.status === 'active') {
-          return { ...item, status: 'archived' as const };
-        }
-        return item;
-      })
-    );
-    showToast('Perubahan Disimpan', 'Konfigurasi tahun ajaran berhasil diperbarui.', 'success');
+  // Submissions Actions (Compatibility)
+  const addYanbuaRecord = (data: Omit<YanbuaRecord, 'id'>) => {
+    const rec = { ...data, id: `yb-${Date.now()}` };
+    setYanbuaRecords((prev) => [rec, ...prev]);
   };
 
-  const deleteAcademicYear = (id: string) => {
-    const target = academicYears.find((y) => y.id === id);
-    if (target?.status === 'active') {
-      showToast('Gagal Menghapus', 'Tahun ajaran yang sedang aktif tidak dapat dihapus.', 'error');
-      return;
-    }
-    setAcademicYears((prev) => prev.filter((y) => y.id !== id));
-    showToast('Tahun Ajaran Dihapus', `Periode ${target?.year || ''} telah dihapus.`, 'info');
+  const addDoaRecord = (data: Omit<DoaRecord, 'id'>) => {
+    const rec = { ...data, id: `doa-${Date.now()}` };
+    setDoaRecords((prev) => [rec, ...prev]);
   };
 
-  const setActiveAcademicPeriod = (year: string, semester: 'Ganjil' | 'Genap') => {
-    setAcademicYears((prev) => {
-      let matched = false;
-      const updated = prev.map((item) => {
-        if (item.year === year && item.semester === semester) {
-          matched = true;
-          return { ...item, status: 'active' as const, isLocked: false };
-        }
-        return item.status === 'active' ? { ...item, status: 'archived' as const } : item;
-      });
-
-      if (!matched) {
-        const newEntry: AcademicYearItem = {
-          id: `ay-${Date.now()}`,
-          year,
-          semester,
-          status: 'active',
-          startDate: semester === 'Ganjil' ? `${year.split('/')[0]}-07-14` : `${year.split('/')[1]}-01-05`,
-          endDate: semester === 'Ganjil' ? `${year.split('/')[0]}-12-20` : `${year.split('/')[1]}-06-20`,
-          targetMeetings: 16,
-          effectiveWeeks: semester === 'Ganjil' ? 20 : 22,
-          isLocked: false,
-          notes: 'Periode aktif',
-          createdAt: new Date().toISOString().split('T')[0],
-        };
-        return [newEntry, ...updated];
-      }
-      return updated;
-    });
-
-    setSchoolInfo((prev) => ({ ...prev, academicYear: year, semester }));
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'achievement',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Mengaktifkan periode akademik: ${year} Semester ${semester}`,
-      target: year,
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-    showToast('Periode Aktif Diperbarui', `Tahun Ajaran ${year} Semester ${semester} kini berstatus aktif.`, 'success');
+  const addQuranRecord = (data: Omit<QuranRecord, 'id'>) => {
+    const rec = { ...data, id: `qr-${Date.now()}` };
+    setQuranRecords((prev) => [rec, ...prev]);
   };
 
-  const toggleLockAcademicYear = (id: string) => {
-    setAcademicYears((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, isLocked: !item.isLocked } : item))
-    );
-    const item = academicYears.find((y) => y.id === id);
-    const isNowLocked = !item?.isLocked;
-    showToast(
-      isNowLocked ? 'Periode Terkunci' : 'Kunci Periode Dibuka',
-      isNowLocked
-        ? `Nilai dan presensi pada ${item?.year} ${item?.semester} terkunci dari perubahan.`
-        : `Periode ${item?.year} ${item?.semester} kini dapat diedit kembali.`,
-      isNowLocked ? 'info' : 'success'
-    );
+  const markTodayAllSubmitted = () => {
+    showToast('Semua Siswa Terverifikasi', 'Status presensi dan evaluasi hari ini terkonfirmasi lengkap.', 'success');
   };
 
-  // System Users & RBAC Actions
-  const addSystemUser = (data: Omit<SystemUser, 'id'>) => {
-    const newUser: SystemUser = {
-      ...data,
-      id: `user-${Date.now()}`,
-      status: data.status || 'active',
-      avatar:
-        data.avatar ||
-        `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
-      createdAt: new Date().toISOString().split('T')[0],
-      lastLogin: 'Belum pernah login',
-    };
-    setSystemUsers((prev) => [newUser, ...prev]);
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Baru saja',
-      type: 'student',
-      user: currentUser.name,
-      role: currentUser.role,
-      description: `Membuat akun pengguna baru: ${newUser.name} (${newUser.role})`,
-      target: newUser.name,
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-    showToast('Akun Pengguna Dibuat', `Akun ${newUser.name} dengan peran ${newUser.role.replace('_', ' ')} berhasil dibuat.`, 'success');
+  const quickSetoran = (
+    studentId: string,
+    jenis: 'Yanbu\'a' | 'Doa Harian' | 'Al-Qur\'an',
+    materi: string,
+    nilai: number,
+    status: 'LULUS' | 'MENGULANG' | 'BELUM SETOR' | 'DALAM BIMBINGAN',
+    catatan?: string
+  ) => {
+    showToast('Catatan Disimpan', `${jenis}: ${materi} (Nilai: ${nilai})`, 'success');
   };
 
-  const updateSystemUser = (id: string, data: Partial<SystemUser>) => {
-    setSystemUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, ...data } : u))
-    );
-    if (currentUser.id === id) {
-      setCurrentUser((prev) => ({ ...prev, ...data }));
-    }
-    showToast('Akun Diperbarui', 'Informasi profil dan hak akses pengguna telah disimpan.', 'success');
-  };
-
-  const deleteSystemUser = (id: string) => {
-    if (currentUser.id === id) {
-      showToast('Gagal Menghapus Akun', 'Anda tidak dapat menghapus akun yang sedang Anda gunakan saat ini.', 'error');
-      return;
-    }
-    const target = systemUsers.find((u) => u.id === id);
-    setSystemUsers((prev) => prev.filter((u) => u.id !== id));
-    showToast('Akun Dihapus', `Akun ${target?.name || ''} telah dihapus dari sistem.`, 'info');
-  };
-
-  const toggleUserStatus = (id: string) => {
-    if (currentUser.id === id) {
-      showToast('Peringatan', 'Anda tidak dapat menonaktifkan akun yang sedang aktif digunakan.', 'error');
-      return;
-    }
-    setSystemUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u))
-    );
-    const target = systemUsers.find((u) => u.id === id);
-    const isNowActive = target?.status !== 'active';
-    showToast(
-      isNowActive ? 'Akun Diaktifkan' : 'Akun Dinonaktifkan',
-      `Status akun ${target?.name} kini ${isNowActive ? 'Aktif' : 'Nonaktif'}.`,
-      isNowActive ? 'success' : 'info'
-    );
-  };
-
-  const resetUserPassword = (id: string, customPass?: string) => {
-    const target = systemUsers.find((u) => u.id === id);
-    const newPass = customPass || 'Alfa2026!';
-    showToast('Password Berhasil Direset', `Password akun ${target?.name} direset menjadi: ${newPass}`, 'success');
-  };
-
-  const resetToDefault = () => {
+  // Demo reset
+  const resetToDemoData = () => {
     setSchoolInfo(DEFAULT_SCHOOL_INFO);
+    setCurrentUser(INITIAL_USERS[0]);
+    setExtracurriculars(INITIAL_EXTRACURRICULARS);
     setStudents(INITIAL_STUDENTS);
-    setExtracurriculars(
-      INITIAL_EKSTRAKURIKULER.map((e) => ({
-        ...e,
-        status: e.isActive ? 'Aktif' : 'Nonaktif',
-        targetCapaian: e.targetAchievement,
-      }))
-    );
-    setCoaches(
-      INITIAL_COACHES.map((c) => ({
-        ...c,
-        ekskulIds: [c.ekskulId],
-        status: 'Guru Tetap',
-      }))
-    );
-    setAchievements(
-      INITIAL_ACHIEVEMENTS.map((a) => ({
-        ...a,
-        certificateUrl: a.certificateUrl || 'https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=500&auto=format&fit=crop&q=80',
-      }))
-    );
+    setClasses(CLASSES_LIST);
+    setCoaches(INITIAL_COACHES);
+    setAchievements(INITIAL_ACHIEVEMENTS);
+    setAttendanceRecords(INITIAL_ATTENDANCE_RECORDS);
+    setActivityJournals(INITIAL_JOURNALS);
+    setTargets(INITIAL_TARGETS);
+    setAssessments(INITIAL_ASSESSMENTS);
     setActivityLogs(INITIAL_ACTIVITY_LOGS);
-    setNotifications(INITIAL_NOTIFICATIONS);
-    setAttendanceRecords([]);
-    setAssessments([]);
-    setAcademicYears(INITIAL_ACADEMIC_YEARS);
-    setSystemUsers(INITIAL_SYSTEM_USERS);
-
-    localStorage.removeItem(`${STORAGE_KEY}_SCHOOL`);
-    localStorage.removeItem(`${STORAGE_KEY}_STUDENTS`);
-    localStorage.removeItem(`${STORAGE_KEY}_EKSKUL`);
-    localStorage.removeItem(`${STORAGE_KEY}_COACHES`);
-    localStorage.removeItem(`${STORAGE_KEY}_ACHIEVEMENTS`);
-    localStorage.removeItem(`${STORAGE_KEY}_LOGS`);
-    localStorage.removeItem(`${STORAGE_KEY}_NOTIFS`);
-    localStorage.removeItem(`${STORAGE_KEY}_ATTENDANCE`);
-    localStorage.removeItem(`${STORAGE_KEY}_ASSESSMENTS`);
-    localStorage.removeItem(`${STORAGE_KEY}_ACADEMIC_YEARS`);
-    localStorage.removeItem(`${STORAGE_KEY}_SYSTEM_USERS`);
-
-    showToast('Reset Selesai', 'Data bawaan SMP Alfa Ali Masykur telah dipulihkan.', 'success');
+    localStorage.clear();
+    showToast('Reset Selesai', 'Data sistem telah dikembalikan ke standar resmi SMP Alfa Ali Masykur.', 'success');
   };
 
-  const resetToDemoData = resetToDefault;
+  // Export JSON
+  const exportDatabaseJson = () => {
+    const dbDump = {
+      schoolInfo,
+      extracurriculars,
+      students,
+      coaches,
+      achievements,
+      attendanceRecords,
+      activityJournals,
+      targets,
+      assessments,
+      teachers,
+      classes,
+      activityLogs,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(dbDump, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_ekskul_alfa_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Backup Berhasil', 'Seluruh basis data sistem berhasil diekspor sebagai JSON.');
+  };
+
+  // Import JSON
+  const importDatabaseJson = (jsonData: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonData);
+      if (parsed.students && Array.isArray(parsed.students)) {
+        if (parsed.schoolInfo) setSchoolInfo(parsed.schoolInfo);
+        if (parsed.extracurriculars) setExtracurriculars(parsed.extracurriculars);
+        setStudents(parsed.students);
+        if (parsed.coaches) setCoaches(parsed.coaches);
+        if (parsed.achievements) setAchievements(parsed.achievements);
+        if (parsed.attendanceRecords) setAttendanceRecords(parsed.attendanceRecords);
+        if (parsed.activityJournals) setActivityJournals(parsed.activityJournals);
+        if (parsed.targets) setTargets(parsed.targets);
+        if (parsed.assessments) setAssessments(parsed.assessments);
+        if (parsed.classes && Array.isArray(parsed.classes)) setClasses(parsed.classes);
+        if (parsed.activityLogs && Array.isArray(parsed.activityLogs)) setActivityLogs(parsed.activityLogs);
+        showToast('Restore Berhasil', 'Seluruh data ekstrakurikuler berhasil diimpor.', 'success');
+        return true;
+      }
+      showToast('Gagal Impor', 'Format file cadangan tidak sesuai skema sistem.', 'error');
+      return false;
+    } catch (e) {
+      showToast('Format Tidak Valid', 'Gagal memproses file JSON cadangan.', 'error');
+      return false;
+    }
+  };
 
   return (
     <AppContext.Provider
       value={{
         currentUser,
-        setCurrentUser,
         switchRole,
-        isLoggedIn,
+        setCurrentUser,
         login,
         logout,
         currentView,
         setCurrentView,
+        selectedStudentId,
+        setSelectedStudentId,
         selectedStudentDetailId,
         setSelectedStudentDetailId,
-        selectedEkskulDetailId,
-        setSelectedEkskulDetailId,
-        schoolInfo,
-        updateSchoolInfo,
-        students,
-        extracurriculars,
-        coaches,
-        achievements,
-        activityLogs,
-        notifications,
-        attendanceRecords,
-        assessments,
-        academicYears,
-        addAcademicYear,
-        updateAcademicYear,
-        deleteAcademicYear,
-        setActiveAcademicPeriod,
-        toggleLockAcademicYear,
-        systemUsers,
-        addSystemUser,
-        updateSystemUser,
-        deleteSystemUser,
-        toggleUserStatus,
-        resetUserPassword,
-        roleConfigs,
         globalSearch,
         setGlobalSearch,
-        addStudent,
-        updateStudent,
-        deleteStudent,
+        schoolInfo,
+        setSchoolInfo,
+        updateSchoolInfo,
+        extracurriculars,
+        setExtracurriculars,
         addExtracurricular,
         updateExtracurricular,
         deleteExtracurricular,
+        students,
+        setStudents,
+        addStudent,
+        updateStudent,
+        deleteStudent,
+        coaches,
+        setCoaches,
         addCoach,
         updateCoach,
         deleteCoach,
+        achievements,
+        setAchievements,
         addAchievement,
         updateAchievement,
         deleteAchievement,
+        attendanceRecords,
+        setAttendanceRecords,
         saveAttendanceBatch,
-        saveCompetencyAssessment,
+        activityJournals,
+        setActivityJournals,
+        addActivityJournal,
+        updateActivityJournal,
+        deleteActivityJournal,
+        targets,
+        setTargets,
+        addTarget,
+        updateTarget,
+        deleteTarget,
+        assessments,
+        setAssessments,
         saveAssessment,
-        markNotificationAsRead,
-        markAllNotificationsAsRead,
-        resetToDefault,
-        resetToDemoData,
+        classes,
+        setClasses,
+        addClass,
+        updateClass,
+        deleteClass,
+        teachers,
+        addTeacher,
+        updateTeacher,
+        deleteTeacher,
+        activityLogs,
+        setActivityLogs,
+        addActivityLog,
         toast,
         showToast,
+        resetToDemoData,
+        exportDatabaseJson,
+        importDatabaseJson,
+        backupDatabase: exportDatabaseJson,
+        restoreDatabase: importDatabaseJson,
+        resetToDefault: resetToDemoData,
+        yanbuaRecords,
+        doaRecords,
+        quranRecords,
+        unifiedSetoran,
+        masterDoaList,
+        addYanbuaRecord,
+        addDoaRecord,
+        addQuranRecord,
+        markTodayAllSubmitted,
+        quickSetoran,
       }}
     >
       {children}

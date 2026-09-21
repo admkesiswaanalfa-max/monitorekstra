@@ -1,23 +1,32 @@
-export type UserRole = 'admin' | 'kepala_sekolah' | 'pembina' | 'wali_kelas';
+export type UserRole =
+  | 'admin'
+  | 'kepala_sekolah'
+  | 'pembina'
+  | 'wali_kelas'
+  | 'guru'
+  | 'super_admin'
+  | 'pelatih';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  roleTitle?: string;
   avatar: string;
   nip?: string;
-  assignedEkskulId?: string; // for pembina
-  assignedClass?: string;     // for wali kelas, e.g. "VIII-A"
+  phone?: string;
+  assignedClass?: string; // e.g. "VIII-A", "7A" for wali kelas
+  assignedEkskulId?: string;
+  assignedEkskulName?: string;
   isAuthenticated?: boolean;
 }
 
 export type Gender = 'L' | 'P';
+export type StudentStatus = 'Aktif' | 'Alumni' | 'Pindah' | 'Mutasi' | 'Tidak Aktif' | 'Lulus';
 
-export type StudentStatus = 'Aktif' | 'Cuti' | 'Nonaktif';
-
-export interface CompetencyAspects {
-  keterampilan: number;   // 1 to 4 scale
+export interface StudentCompetencies {
+  keterampilan: number;
   pengetahuan: number;
   kreativitas: number;
   kerjasama: number;
@@ -25,62 +34,196 @@ export interface CompetencyAspects {
   tanggungJawab: number;
   kepemimpinan: number;
   sportivitas: number;
+  // Extended 12 aspects from official curriculum
+  kehadiran?: number;
+  kedisiplinan?: number;
+  keaktifan?: number;
+  sikap?: number;
+  penguasaanMateri?: number;
+  keterampilanTeknis?: number;
+  prestasi?: number;
+  konsistensiLatihan?: number;
+  perkembanganUmum?: number;
+  tajwid?: number;
+  fashahah?: number;
+  kelancaran?: number;
+  adab?: number;
 }
 
-export type StudentCompetencies = CompetencyAspects;
+export type EkskulCategory =
+  | 'Olahraga'
+  | 'Seni & Budaya'
+  | 'Keagamaan'
+  | 'Akademik'
+  | 'Kepanduan/Kepemimpinan'
+  | 'Keterampilan/Teknologi'
+  | 'Seni'
+  | 'Kepemimpinan';
 
-export type AttendanceStatus = 'Hadir' | 'Izin' | 'Sakit' | 'Alpa' | 'H' | 'I' | 'S' | 'A';
-
-export interface AttendanceRecord {
+export interface Extracurricular {
   id: string;
-  studentId: string;
-  studentName?: string;
-  ekskulId: string;
-  date: string; // YYYY-MM-DD
-  meetingNumber?: number;
-  status: AttendanceStatus;
-  topic?: string;
+  code?: string;
+  name: string;
+  category: EkskulCategory;
+  description: string;
+  coachId?: string;
+  coachName: string;
+  trainerName?: string;
+  day: string;
+  time: string;
+  schedule: string;
+  location: string;
+  targetCapaian: string;
+  image: string;
+  status: 'Aktif' | 'Nonaktif';
+  quota?: number;
+  enrolled?: number;
+}
+
+export interface Student {
+  id: string;
+  nis: string;
+  nisn: string;
+  name: string;
+  nickname?: string;
+  gender: Gender;
+  birthPlace?: string;
+  birthDate?: string;
+  class: string; // e.g. 'VII-A', 'VIII-A', 'IX-B'
+  rombel?: string;
+  waliKelas?: string;
+  avatar: string;
+  phone?: string;
+  parentName: string;
+  parentPhone: string;
+  ekskulIds: string[];
+  status: StudentStatus;
+  attendanceRate: number; // 0 - 100%
+  overallScore: number; // 0 - 100
+  category: 'Sangat Baik' | 'Baik' | 'Cukup' | 'Perlu Pembinaan' | string;
+  competencies: StudentCompetencies;
+  notes?: string;
+
+  // Optional legacy fields for Yanbua / Tahfidz compatibility
+  yanbuaJilid?: string;
+  yanbuaHalaman?: number;
+  yanbuaProgressPct?: number;
+  targetHafalan?: string;
+  doaMasteredCount?: number;
+  doaTotalTarget?: number;
+  quranJuz?: number;
+  quranSurah?: string;
+  quranAyatCount?: number;
+  quranTargetAyat?: number;
+  overallProgress?: number;
+  statusSetoranHariIni?: string;
+  needAssistance?: boolean;
+  lastSubmissionDate?: string;
+}
+
+export interface Coach {
+  id: string;
+  name: string;
+  nip: string;
+  phone: string;
+  email: string;
+  ekskulIds: string[];
+  status: 'Guru Tetap' | 'Pelatih Luar' | 'Aktif' | 'Non-aktif';
+  avatar: string;
+  specialty?: string;
   notes?: string;
 }
 
-export interface CompetencyAssessment {
+export type AttendanceStatus =
+  | 'H'
+  | 'S'
+  | 'I'
+  | 'A'
+  | 'D'
+  | 'Hadir'
+  | 'Sakit'
+  | 'Izin'
+  | 'Alpa'
+  | 'Dispensasi';
+
+export interface AttendanceRecord {
   id: string;
+  ekskulId: string;
+  meetingNumber: number;
+  date: string;
+  topic: string;
   studentId: string;
   studentName?: string;
+  class?: string;
+  status: AttendanceStatus;
+  notes?: string;
+  recordedBy?: string;
+}
+
+export interface ActivityJournal {
+  id: string;
+  ekskulId: string;
+  ekskulName: string;
+  date: string;
+  day: string;
+  meetingNumber: number;
+  topic: string;
+  purpose: string;
+  activities: string;
+  trainingMethod: string;
+  totalParticipants: number;
+  presentCount: number;
+  absentCount: number;
+  results: string;
+  obstacles: string;
+  solutions: string;
+  followUp: string;
+  coachName: string;
+  imageUrl?: string;
+  createdAt?: string;
+}
+
+export interface AssessmentRecord {
+  id: string;
+  studentId: string;
+  studentName: string;
   ekskulId: string;
   ekskulName?: string;
-  period: string; // e.g. "November 2025" or "Semester Ganjil 2025/2026"
+  class?: string;
   date: string;
-  // A. Keterampilan (1-4)
-  teknik?: number;
-  praktik?: number;
-  kreativitas?: number;
-  // B. Sikap (1-4)
-  disiplin?: number;
-  tanggungJawab?: number;
-  kerjasama?: number;
-  sportivitas?: number;
-  kepemimpinan?: number;
-  // C. Keaktifan (1-4)
-  kehadiranScore?: number;
-  partisipasi?: number;
-  inisiatif?: number;
-  scores?: StudentCompetencies;
-  // Calculated
-  averageScore: number; // 1.0 - 4.0
-  developmentPercentage?: number; // 0 - 100%
-  category: 'Sangat Baik' | 'Baik' | 'Cukup' | 'Perlu Pembinaan' | string;
-  trend?: 'Meningkat' | 'Stabil' | 'Menurun';
-  notes: string;
-  recommendation?: string;
+  period?: string;
+  score?: number;
+  averageScore?: number;
+  scores?: Record<string, number>;
+  category?: string;
+  aspects?: StudentCompetencies;
+  notes?: string;
+  strengths?: string;
+  improvements?: string;
+  recommendations?: string;
   coachName?: string;
 }
 
-export type AssessmentRecord = CompetencyAssessment;
+export interface EkskulTarget {
+  id: string;
+  ekskulId: string;
+  ekskulName: string;
+  title: string;
+  category: string;
+  targetDescription: string;
+  processDescription: string;
+  achievementDescription: string;
+  evaluationDescription: string;
+  followUpDescription: string;
+  progressPercentage: number;
+  status: 'Dalam Proses' | 'Tercapai' | 'Perlu Pendampingan' | 'Melampaui Target';
+  dueDate: string;
+}
 
 export type AchievementLevel =
   | 'Sekolah'
   | 'Kecamatan'
+  | 'Kabupaten'
   | 'Kabupaten/Kota'
   | 'Provinsi'
   | 'Nasional'
@@ -90,189 +233,236 @@ export interface Achievement {
   id: string;
   studentId: string;
   studentName: string;
-  studentClass?: string;
+  studentClass: string;
   ekskulId: string;
-  ekskulName: string;
-  competitionName: string;
-  level: AchievementLevel;
-  year: number | string;
-  rank: string; // e.g. "Juara 1", "Medali Emas", "Harapan 1"
-  date: string;
-  organizer: string;
-  description: string;
-  certificateUrl: string;
-}
-
-export interface Student {
-  id: string;
-  nis: string;
-  nisn: string;
-  name: string;
-  class: string; // e.g. "VII-A", "VIII-B"
-  gender: Gender;
-  avatar: string;
-  parentName: string;
-  parentPhone: string;
-  ekskulIds: string[];
-  status: StudentStatus;
-  // Overall aggregated stats
-  attendanceRate: number; // in %
-  overallScore: number;   // 1.0 - 4.0
-  category: 'Sangat Baik' | 'Baik' | 'Cukup' | 'Perlu Pembinaan';
-  competencies: CompetencyAspects;
-  historyScores: { month: string; score: number }[];
-  notesPembina?: string;
-}
-
-export type EkskulCategory =
-  | 'Olahraga'
-  | 'Seni & Budaya'
-  | 'Kepanduan & Bela Negara'
-  | 'Keagamaan'
-  | 'Sains & Teknologi'
-  | 'Keterampilan'
-  | 'Akademik'
-  | 'Kepanduan/Kepemimpinan'
-  | 'Keterampilan/Teknologi'
-  | string;
-
-export interface Extracurricular {
-  id: string;
-  name: string;
-  category: EkskulCategory;
-  iconName?: string;
-  image: string;
-  coachId?: string;
-  coachName: string;
-  schedule: string;
-  location: string;
-  isActive?: boolean;
-  status?: 'Aktif' | 'Nonaktif';
-  description: string;
-  targetAchievement?: string;
-  targetCapaian?: string;
-}
-
-export interface Coach {
-  id: string;
-  name: string;
-  nip: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  ekskulId?: string;
-  ekskulIds?: string[];
   ekskulName?: string;
-  specialization?: string;
-  joinYear?: number;
-  status?: 'Guru Tetap' | 'Pelatih Luar';
+  competitionName: string;
+  title?: string;
+  category?: string;
+  level: AchievementLevel;
+  rank: string;
+  organizer: string;
+  date: string;
+  year: string;
+  description?: string;
+  certificateUrl?: string;
+  documentationUrl?: string;
+  notes?: string;
+}
+
+export interface SchoolInfo {
+  name: string;
+  foundationName?: string;
+  showFoundationName?: boolean;
+  subHeader?: string;
+  npsn: string;
+  address: string;
+  phone: string;
+  email: string;
+  headmaster?: string;
+  headmasterNip?: string;
+  academicYear: string;
+  semester?: 'Ganjil' | 'Genap';
+  principal?: string;
+  principalNip?: string;
+  vicePrincipalStudentAffairs?: string; // Yulianti, S.Pd.
+  vicePrincipalStudentAffairsNip?: string;
+  subdistrict?: string;
+  district?: string;
+  postalCode?: string;
+  website?: string;
+  coordinatorName?: string;
+  coordinatorNip?: string;
+  logoUrl?: string;
+  secondaryLogoUrl?: string;
+  showSecondaryLogo?: boolean;
+  logoSize?: 'sm' | 'md' | 'lg';
+  logoShape?: 'circle' | 'rounded' | 'square';
+  fontFamily?: 'times' | 'arial' | 'bookman' | 'calibri' | 'georgia';
+  fontScale?: 'sm' | 'md' | 'lg';
+  headerColorTheme?: 'black' | 'emerald' | 'navy';
+  institutionStatus?: string;
+}
+
+export interface Teacher {
+  id: string;
+  name: string;
+  role: string;
+  specialty?: string;
+  phone?: string;
+  nip?: string;
+  email?: string;
+  assignedClass?: string;
+  avatar?: string;
+}
+
+export interface ClassInfo {
+  id: string;
+  name: string;
+  rombelCode?: string;
+  grade?: '7' | '8' | '9' | string;
+  waliKelas: string;
+  waliKelasNip?: string;
+  room?: string;
+  capacity?: number;
+  totalStudents?: number;
+  academicYear?: string;
+  semester?: 'Ganjil' | 'Genap';
+  classLeader?: string;
+  notes?: string;
+  status?: 'Aktif' | 'Nonaktif';
+}
+
+export interface AcademicYearItem {
+  id: string;
+  year: string;
+  semester: 'Ganjil' | 'Genap';
+  status: 'active' | 'planned' | 'archived';
+  isActive?: boolean;
+  startDate: string;
+  endDate: string;
+  targetMeetings?: number;
+  effectiveWeeks?: number;
+  isLocked?: boolean;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive?: boolean;
+  status?: string;
+  lastLogin?: string;
+  avatar?: string;
+  nip?: string;
+  phone?: string;
+  assignedEkskulId?: string;
+  assignedClass?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface RoleAccessConfig {
+  role: UserRole;
+  allowedViews?: string[];
+  roleTitle?: string;
+  roleDescription?: string;
+  badgeColor?: string;
+  permissions?: any;
 }
 
 export interface ActivityLog {
   id: string;
   timestamp: string;
-  type: 'assessment' | 'attendance' | 'achievement' | 'student' | 'note' | 'ekskul';
-  user: string;
-  role: string;
-  description: string;
-  target: string;
+  userName?: string;
+  userRole?: string;
+  action?: string;
+  details?: string;
+  ip?: string;
+  // Dashboard feed fields
+  type?: 'assessment' | 'attendance' | 'achievement' | 'journal' | 'system' | string;
+  user?: string;
+  role?: string;
+  description?: string;
+  target?: string;
 }
 
-export interface NotificationItem {
-  id: string;
-  type: 'attendance_alert' | 'unassessed' | 'schedule' | 'achievement' | 'reminder';
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  priority: 'low' | 'medium' | 'high';
-  linkTarget?: string;
-}
+// Optional Legacy compatibility types for Ngaji/Tahfidz modals
+export type YanbuaLevel =
+  | 'Jilid 1'
+  | 'Jilid 2'
+  | 'Jilid 3'
+  | 'Jilid 4'
+  | 'Jilid 5'
+  | 'Jilid 6'
+  | 'Jilid 7'
+  | "Al-Qur'an";
 
-export interface SemesterReport {
+export type SubmissionStatus =
+  | 'LULUS'
+  | 'MENGULANG'
+  | 'BELUM SETOR'
+  | 'DALAM BIMBINGAN';
+
+export interface YanbuaRecord {
   id: string;
   studentId: string;
   studentName: string;
-  class: string;
-  nis: string;
-  ekskulId: string;
-  ekskulName: string;
-  academicYear: string;
-  semester: 'Ganjil' | 'Genap';
-  attendanceScore: number;
-  competencyScore: number;
-  attitudeScore: number;
-  activityScore: number;
-  finalScore: number; // 0-100 or 1-4
-  finalGrade: 'A' | 'B' | 'C' | 'D';
-  autoDescription: string;
-  teacherNotes: string;
-  createdAt: string;
+  studentClass: string;
+  jilid: YanbuaLevel;
+  halaman: number;
+  materi: string;
+  tanggal: string;
+  pembimbing: string;
+  nilai: number;
+  kelancaran: string;
+  tajwidMakhraj: string;
+  catatan: string;
+  status: 'LULUS' | 'MENGULANG' | 'DALAM BIMBINGAN';
 }
 
-export interface SchoolInfo {
-  name: string;
-  npsn: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  principal: string;
-  principalNip: string;
-  academicYear: string;
-  semester: 'Ganjil' | 'Genap';
-  // Letterhead & Logo Customization Properties
-  foundationName?: string;
-  subHeader?: string;
-  logoUrl?: string;
-  secondaryLogoUrl?: string;
-  showSecondaryLogo?: boolean;
-  logoSize?: 'sm' | 'md' | 'lg';
-  logoShape?: 'original' | 'circle' | 'rounded';
-  city?: string;
-  coordinatorName?: string;
-  coordinatorNip?: string;
+export interface DoaItem {
+  id: number | string;
+  nama?: string;
+  kategori?: string;
+  arab?: string;
+  latin?: string;
+  arti?: string;
+  name?: string;
+  category?: string;
+  arabic?: string;
+  meaning?: string;
 }
 
-export interface AcademicYearItem {
+export interface DoaRecord {
   id: string;
-  year: string; // e.g. "2025/2026"
-  semester: 'Ganjil' | 'Genap';
-  status: 'active' | 'archived' | 'planned';
-  startDate: string; // e.g. "2025-07-14"
-  endDate: string; // e.g. "2025-12-20"
-  targetMeetings: number; // e.g. 16
-  effectiveWeeks: number; // e.g. 20
-  isLocked: boolean; // if true, report grading & attendance is read-only
-  notes?: string;
-  createdAt?: string;
+  studentId: string;
+  studentName: string;
+  studentClass: string;
+  namaDoa: string;
+  tanggal: string;
+  pembimbing: string;
+  kelancaran: string;
+  ketepatanLafaz: string;
+  nilai: number;
+  status: 'HAFAL' | 'BELUM HAFAL' | 'PERLU PENGULANGAN';
+  catatan: string;
 }
 
-export interface SystemUser extends User {
-  phone?: string;
-  status: 'active' | 'inactive';
-  lastLogin?: string;
-  createdAt?: string;
-  notes?: string;
+export interface QuranRecord {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentClass: string;
+  surah: string;
+  juz: number;
+  ayatMulai: number;
+  ayatAkhir: number;
+  jumlahAyat: number;
+  tanggal: string;
+  pembimbing: string;
+  kelancaran: string;
+  tajwid: string;
+  makhraj: string;
+  nilai: number;
+  status: 'LANCAR' | 'CUKUP LANCAR' | 'PERLU MURAJAAH' | 'MENGULANG';
+  catatan: string;
 }
 
-export interface ModulePermission {
-  moduleId: string;
-  moduleName: string;
-  description: string;
-  canView: boolean;
-  canCreate: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  canExport: boolean;
-  canApprove: boolean;
-  scopeNote?: string;
-}
-
-export interface RoleAccessConfig {
-  role: UserRole;
-  roleTitle: string;
-  roleDescription: string;
-  badgeColor: string;
-  permissions: ModulePermission[];
+export interface UnifiedSetoran {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentClass: string;
+  jenisSetoran: "Yanbu'a" | 'Doa Harian' | "Al-Qur'an";
+  materi: string;
+  hasil?: string;
+  nilai: number;
+  tanggal: string;
+  status: SubmissionStatus;
+  pembimbing: string;
+  catatan?: string;
 }

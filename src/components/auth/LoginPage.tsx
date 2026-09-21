@@ -46,7 +46,7 @@ interface RoleConfig {
   capabilities: { title: string; desc: string; icon: React.ComponentType<{ className?: string }> }[];
 }
 
-const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
+const ROLE_CONFIGS: Record<string, RoleConfig> = {
   admin: {
     role: 'admin',
     name: 'Administrator SIM',

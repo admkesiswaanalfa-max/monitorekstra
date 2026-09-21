@@ -53,19 +53,31 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
 
   // Text contents
   const [foundationName, setFoundationName] = useState(
-    schoolInfo.foundationName || 'YAYASAN PENDIDIKAN ALFA ALI MASYKUR'
+    schoolInfo.foundationName || 'YAYASAN PONDOK PESANTREN ALFA ALI MASYKUR'
+  );
+  const [showFoundationName, setShowFoundationName] = useState(
+    schoolInfo.showFoundationName !== false
   );
   const [name, setName] = useState(schoolInfo.name || 'SMP ALFA ALI MASYKUR');
   const [subHeader, setSubHeader] = useState(
     schoolInfo.subHeader ||
-      `NPSN: ${schoolInfo.npsn || '20512345'} • Terakreditasi A (Unggul) • NSS: 202051405001`
+      `NPSN: ${schoolInfo.npsn || '20307890'} • STATUS: TERAKREDITASI "A" (UNGGUL) • NSS: 202030709001`
   );
   const [address, setAddress] = useState(
-    schoolInfo.address || 'Jl. Raya Pesantren No. 45, Pasuruan, Jawa Timur'
+    schoolInfo.address || 'Jl. Dieng Km. 05 Bumirejo, Kecamatan Mojotengah, Kabupaten Wonosobo, Jawa Tengah 56351'
   );
-  const [phone, setPhone] = useState(schoolInfo.phone || '(031) 876-5432');
-  const [email, setEmail] = useState(schoolInfo.email || 'info@smpalfaalimasykur.sch.id');
+  const [phone, setPhone] = useState(schoolInfo.phone || '(0286) 321890');
+  const [email, setEmail] = useState(schoolInfo.email || 'smpalfaalimasykur@gmail.com');
   const [website, setWebsite] = useState(schoolInfo.website || 'www.smpalfaalimasykur.sch.id');
+
+  // Font typography settings
+  const [fontFamily, setFontFamily] = useState<'times' | 'arial' | 'bookman' | 'calibri' | 'georgia'>(
+    schoolInfo.fontFamily || 'arial'
+  );
+  const [fontScale, setFontScale] = useState<'sm' | 'md' | 'lg'>(schoolInfo.fontScale || 'md');
+  const [headerColorTheme, setHeaderColorTheme] = useState<'black' | 'emerald' | 'navy'>(
+    schoolInfo.headerColorTheme || 'emerald'
+  );
 
   // Input states
   const [customPrimaryUrl, setCustomPrimaryUrl] = useState('');
@@ -136,12 +148,16 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
       logoSize,
       logoShape,
       foundationName,
+      showFoundationName,
       name,
       subHeader,
       address,
       phone,
       email,
       website,
+      fontFamily,
+      fontScale,
+      headerColorTheme,
     });
     showToast(
       'Kop Surat & Logo Disimpan',
@@ -160,7 +176,7 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
     setLogoShape('original');
     setFoundationName('YAYASAN PENDIDIKAN ALFA ALI MASYKUR');
     setName('SMP ALFA ALI MASYKUR');
-    setSubHeader('NPSN: 20512345 • Terakreditasi A (Unggul) • NSS: 202051405001');
+    setSubHeader('NPSN: 20512345 • Terakreditasi A (Unggul)');
     setAddress('Jl. Raya Pesantren No. 45, Pasuruan, Jawa Timur');
     setPhone('(031) 876-5432');
     setEmail('info@smpalfaalimasykur.sch.id');
@@ -596,6 +612,64 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
                         }`}
                       >
                         {sh.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Font & Typography Selector */}
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                    <span>Gaya Huruf (Font) Kop Kedinasan</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                    5 Standar Dinas
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                  {[
+                    { id: 'times' as const, label: 'Times New Roman' },
+                    { id: 'arial' as const, label: 'Arial' },
+                    { id: 'bookman' as const, label: 'Bookman' },
+                    { id: 'calibri' as const, label: 'Calibri' },
+                    { id: 'georgia' as const, label: 'Georgia' },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setFontFamily(f.id)}
+                      className={`p-1.5 rounded-lg border text-center text-[11px] font-semibold cursor-pointer transition-all ${
+                        fontFamily === f.id
+                          ? 'bg-emerald-700 text-white border-emerald-700 font-bold shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] font-semibold text-slate-600">Skala Ukuran Teks:</span>
+                  <div className="flex gap-1">
+                    {[
+                      { id: 'sm' as const, label: 'Kompak (90%)' },
+                      { id: 'md' as const, label: 'Standar (100%)' },
+                      { id: 'lg' as const, label: 'Besar (115%)' },
+                    ].map((sc) => (
+                      <button
+                        key={sc.id}
+                        type="button"
+                        onClick={() => setFontScale(sc.id)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer border ${
+                          fontScale === sc.id
+                            ? 'bg-emerald-800 text-white border-emerald-800'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {sc.label}
                       </button>
                     ))}
                   </div>

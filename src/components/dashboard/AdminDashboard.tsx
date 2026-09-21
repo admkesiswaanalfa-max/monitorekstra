@@ -40,11 +40,11 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onPrint }) => {
   const {
-    students,
-    extracurriculars,
-    coaches,
-    achievements,
-    activityLogs,
+    students = [],
+    extracurriculars = [],
+    coaches = [],
+    achievements = [],
+    activityLogs = [],
     setCurrentView,
     setSelectedStudentDetailId,
   } = useApp();
@@ -56,21 +56,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onPrint }) => {
   const totalCoaches = coaches.length;
 
   const avgAttendance = Number(
-    (students.reduce((acc, curr) => acc + curr.attendanceRate, 0) / (totalStudents || 1)).toFixed(1)
+    (students.reduce((acc, curr) => acc + (curr.attendanceRate || 0), 0) / (totalStudents || 1)).toFixed(1)
   );
 
   const studentWithAchievementsCount = new Set(achievements.map((a) => a.studentId)).size;
   const veryGoodStudentsCount = students.filter((s) => s.category === 'Sangat Baik').length;
   const needAttentionCount = students.filter(
-    (s) => s.category === 'Perlu Pembinaan' || s.attendanceRate < 75
+    (s) => s.category === 'Perlu Pembinaan' || (s.attendanceRate || 0) < 75
   ).length;
 
   // Chart 1: Jumlah peserta setiap ekstrakurikuler
-  const ekskulParticipantsData = extracurriculars.map((e) => {
-    const count = students.filter((s) => s.ekskulIds.includes(e.id)).length;
+  const ekskulParticipantsData = (extracurriculars || []).map((e) => {
+    const count = (students || []).filter((s) => (s.ekskulIds || []).includes(e.id)).length;
+    const displayName = e.name || '';
     return {
-      name: e.name.length > 12 ? e.name.slice(0, 11) + '..' : e.name,
-      fullName: e.name,
+      name: displayName.length > 12 ? displayName.slice(0, 11) + '..' : displayName,
+      fullName: displayName,
       peserta: count,
     };
   });
@@ -88,35 +89,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onPrint }) => {
   const avgCompetencyData = [
     {
       aspect: 'Keterampilan',
-      score: Number((students.reduce((a, c) => a + c.competencies.keterampilan, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.keterampilan || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Pengetahuan',
-      score: Number((students.reduce((a, c) => a + c.competencies.pengetahuan, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.pengetahuan || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Kreativitas',
-      score: Number((students.reduce((a, c) => a + c.competencies.kreativitas, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.kreativitas || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Kerjasama',
-      score: Number((students.reduce((a, c) => a + c.competencies.kerjasama, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.kerjasama || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Disiplin',
-      score: Number((students.reduce((a, c) => a + c.competencies.disiplin, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.disiplin || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Tanggung Jwb',
-      score: Number((students.reduce((a, c) => a + c.competencies.tanggungJawab, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.tanggungJawab || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Kepemimpinan',
-      score: Number((students.reduce((a, c) => a + c.competencies.kepemimpinan, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.kepemimpinan || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
     {
       aspect: 'Sportivitas',
-      score: Number((students.reduce((a, c) => a + c.competencies.sportivitas, 0) / totalStudents).toFixed(2)),
+      score: Number(((students || []).reduce((a, c) => a + (c.competencies?.sportivitas || 0), 0) / (totalStudents || 1)).toFixed(2)),
     },
   ];
 
@@ -124,7 +125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onPrint }) => {
   const achievementLevels = ['Sekolah', 'Kecamatan', 'Kabupaten/Kota', 'Provinsi', 'Nasional'];
   const achievementLevelData = achievementLevels.map((lvl) => ({
     level: lvl,
-    total: achievements.filter((a) => a.level === lvl).length,
+    total: (achievements || []).filter((a) => a.level === lvl).length,
   }));
 
   // Chart 5: Tren skor perkembangan siswa dari waktu ke waktu
@@ -137,8 +138,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onPrint }) => {
   ];
 
   // Top 5 Best Students
-  const topStudents = [...students]
-    .sort((a, b) => b.overallScore - a.overallScore)
+  const topStudents = [...(students || [])]
+    .sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0))
     .slice(0, 5);
 
   return (
@@ -488,7 +489,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onPrint }) => {
           </div>
 
           <div className="space-y-3.5">
-            {activityLogs.slice(0, 5).map((log) => (
+            {(activityLogs || []).slice(0, 5).map((log) => (
               <div
                 key={log.id}
                 className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors"

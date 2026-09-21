@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { OfficialLetterhead } from '../common/OfficialLetterhead';
+import { StudentPrintModal } from './StudentPrintModal';
 import {
   X,
   User,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   Printer,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import {
   RadarChart,
@@ -81,19 +83,17 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const sakitCount = Math.min(remaining - izinCount > 0 ? 1 : 0, remaining - izinCount);
   const alpaCount = Math.max(0, remaining - izinCount - sakitCount);
 
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
   const handlePrint = () => {
-    showToast('Mencetak Profil', `Membuka dialog cetak profil resmi ananda ${student.name}...`, 'info');
-    setTimeout(() => {
-      window.focus();
-      window.print();
-    }, 200);
+    setIsPrintModalOpen(true);
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden border border-slate-200 my-4 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto student-detail-modal-backdrop">
+      <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden border border-slate-200 my-4 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 student-detail-modal-container">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white flex items-center justify-between shrink-0 no-print">
           <div className="flex items-center gap-3">
             <img
               src={student.avatar}
@@ -125,16 +125,19 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              id="btn-print-student-detail-header"
               onClick={handlePrint}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors no-print"
-              title="Cetak Profil Siswa"
+              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-blue-500/25 no-print cursor-pointer"
+              title="Cetak Profil Lengkap Siswa (1 Berkas Penuh dari Atas Sampai Bawah)"
             >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Cetak</span>
+              <Printer className="w-4 h-4 text-white" />
+              <span className="hidden sm:inline">Cetak Profil Lengkap</span>
+              <span className="sm:hidden">Cetak</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors no-print"
+              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors no-print cursor-pointer"
               aria-label="Tutup"
             >
               <X className="w-5 h-5" />
@@ -143,7 +146,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 student-detail-modal-body">
           {/* Official Letterhead for printing */}
           <div className="hidden print:block pb-2">
             <OfficialLetterhead readOnly />
@@ -376,18 +379,39 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 no-print">
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 no-print">
           <span className="text-xs text-slate-500">
-            Terakhir dievaluasi: Semester Ganjil 2025/2026
+            Terakhir dievaluasi: Semester Ganjil 2025/2026 &bull; Format dokumen cetak A4 / F4
           </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition-colors"
-          >
-            Tutup
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="btn-print-student-detail-footer"
+              onClick={handlePrint}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Cetak Profil Lengkap</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Full Student Printable Document Modal */}
+      {isPrintModalOpen && (
+        <StudentPrintModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          student={student}
+        />
+      )}
     </div>
   );
 };

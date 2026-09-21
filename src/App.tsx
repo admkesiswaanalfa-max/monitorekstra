@@ -4,72 +4,72 @@ import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopNavbar } from './components/layout/TopNavbar';
 import { Footer } from './components/layout/Footer';
-import { LoginPage } from './components/auth/LoginPage';
 import { DashboardRouter } from './components/dashboard/DashboardRouter';
 import { StudentList } from './components/students/StudentList';
-import { StudentDetailModal } from './components/students/StudentDetailModal';
 import { ExtracurricularList } from './components/extracurricular/ExtracurricularList';
-import { CoachesView } from './components/coaches/CoachesView';
+import { ParticipantsView } from './components/participants/ParticipantsView';
+import { ScheduleView } from './components/schedule/ScheduleView';
 import { AttendanceView } from './components/attendance/AttendanceView';
+import { JournalView } from './components/journal/JournalView';
 import { DevelopmentView } from './components/development/DevelopmentView';
-import { EvaluationView } from './components/evaluation/EvaluationView';
 import { AchievementsView } from './components/achievements/AchievementsView';
+import { TargetView } from './components/targets/TargetView';
+import { EvaluationView } from './components/evaluation/EvaluationView';
+import { CoachesView } from './components/coaches/CoachesView';
 import { ReportsView } from './components/reports/ReportsView';
 import { SettingsView } from './components/settings/SettingsView';
+import { ClassManagementView } from './components/classes/ClassManagementView';
+import { AnalysisView } from './components/analysis/AnalysisView';
+import { UserManagementView } from './components/users/UserManagementView';
+import { ActivityLogsView } from './components/activity/ActivityLogsView';
 
 const MainAppContent: React.FC = () => {
-  const {
-    currentUser,
-    isLoggedIn,
-    currentView,
-    selectedStudentDetailId,
-    setSelectedStudentDetailId,
-    toast,
-  } = useApp();
-
+  const { currentView, toast } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // If not logged in, show the role-tailored login page
-  if (!currentUser.isAuthenticated || !isLoggedIn) {
-    return <LoginPage />;
-  }
-
-  // Render view based on active navigation item with role protection
+  // Render view based on active navigation item
   const renderCurrentView = () => {
-    // Guard views restricted for specific roles
-    if (currentUser.role === 'wali_kelas') {
-      if (['settings', 'coaches', 'extracurriculars', 'attendance'].includes(currentView)) {
-        return <DashboardRouter />;
-      }
-    } else if (currentUser.role === 'pembina') {
-      if (['settings', 'coaches'].includes(currentView)) {
-        return <DashboardRouter />;
-      }
-    } else if (currentUser.role === 'kepala_sekolah') {
-      if (['settings'].includes(currentView)) {
-        return <DashboardRouter />;
-      }
-    }
-
     switch (currentView) {
       case 'dashboard':
         return <DashboardRouter />;
       case 'students':
         return <StudentList />;
-      case 'extracurriculars':
+      case 'classes':
+        return <ClassManagementView />;
+      case 'extracurricular':
         return <ExtracurricularList />;
-      case 'coaches':
-        return <CoachesView />;
+      case 'participants':
+        return <ParticipantsView />;
+      case 'schedule':
+        return <ScheduleView />;
       case 'attendance':
         return <AttendanceView />;
+      case 'journal':
+        return <JournalView />;
       case 'development':
         return <DevelopmentView />;
-      case 'evaluation':
-        return <EvaluationView />;
       case 'achievements':
         return <AchievementsView />;
+      case 'targets':
+        return <TargetView />;
+      case 'analysis':
+        return <AnalysisView />;
+      case 'evaluation':
+        return <EvaluationView />;
+      case 'coaches':
+        return <CoachesView />;
       case 'reports':
+      case 'reports_individual':
+      case 'reports_ekskul':
+      case 'reports_weekly':
+      case 'reports_monthly':
+      case 'reports_semester':
+      case 'reports_annual':
         return <ReportsView />;
+      case 'users':
+        return <UserManagementView />;
+      case 'activity_logs':
+        return <ActivityLogsView />;
       case 'settings':
         return <SettingsView />;
       default:
@@ -78,7 +78,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col antialiased text-slate-800 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-stone-100 flex flex-col antialiased text-slate-800 selection:bg-emerald-700 selection:text-amber-200">
       {/* Responsive Sidebar Navigation */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -102,17 +102,11 @@ const MainAppContent: React.FC = () => {
         <Footer />
       </div>
 
-      {/* Global Student Profile Modal */}
-      <StudentDetailModal
-        studentId={selectedStudentDetailId}
-        onClose={() => setSelectedStudentDetailId(null)}
-      />
-
       {/* Floating Toast Notification */}
       {toast && (
         <div
           id="system-toast-container"
-          className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200"
           role="alert"
         >
           {toast.type === 'success' && (

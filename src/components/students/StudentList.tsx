@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext';
 import { Student } from '../../types';
 import { StudentDetailModal } from './StudentDetailModal';
 import { StudentFormModal } from './StudentFormModal';
+import { PrintSelectedReportModal } from './PrintSelectedReportModal';
+import { exportStudentsToXLSX } from '../../utils/studentExcelExport';
 import {
   Users,
   Search,
@@ -19,6 +21,10 @@ import {
   Sparkles,
   FileSpreadsheet,
   AlertTriangle,
+  Printer,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from 'lucide-react';
 
 export const StudentList: React.FC = () => {
@@ -29,6 +35,8 @@ export const StudentList: React.FC = () => {
     currentUser,
     selectedStudentDetailId,
     setSelectedStudentDetailId,
+    schoolInfo,
+    showToast,
   } = useApp();
 
   // Search & Filters initialized based on user role
@@ -55,6 +63,10 @@ export const StudentList: React.FC = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Multiple selection for students
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isPrintReportModalOpen, setIsPrintReportModalOpen] = useState(false);
 
   // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -107,12 +119,85 @@ export const StudentList: React.FC = () => {
     return filteredStudents.slice(start, start + itemsPerPage);
   }, [filteredStudents, currentPage]);
 
+  // Selected students array
+  const selectedStudents = useMemo(() => {
+    return students.filter((s) => selectedStudentIds.includes(s.id));
+  }, [students, selectedStudentIds]);
+
+  // Checkbox helpers
+  const isAllOnPageSelected =
+    paginatedStudents.length > 0 &&
+    paginatedStudents.every((s) => selectedStudentIds.includes(s.id));
+
+  const isSomeOnPageSelected =
+    paginatedStudents.some((s) => selectedStudentIds.includes(s.id)) &&
+    !isAllOnPageSelected;
+
+  const handleToggleStudent = (id: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAllPage = () => {
+    if (isAllOnPageSelected) {
+      // Uncheck all on current page
+      const pageIds = new Set(paginatedStudents.map((s) => s.id));
+      setSelectedStudentIds((prev) => prev.filter((id) => !pageIds.has(id)));
+    } else {
+      // Check all on current page
+      const newIds = new Set([...selectedStudentIds, ...paginatedStudents.map((s) => s.id)]);
+      setSelectedStudentIds(Array.from(newIds));
+    }
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedStudentIds(filteredStudents.map((s) => s.id));
+    showToast(
+      'Seluruh Siswa Dipilih',
+      `Menandai ${filteredStudents.length} siswa sesuai filter aktif.`,
+      'info'
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentIds([]);
+  };
+
+  const handleOpenPrintReport = () => {
+    if (selectedStudentIds.length === 0) {
+      // If none selected, default to all visible students on current page
+      setSelectedStudentIds(paginatedStudents.map((s) => s.id));
+      showToast(
+        'Memilih Siswa Halaman Aktif',
+        'Menandai 10 siswa di halaman ini untuk dicetak laporannya.',
+        'info'
+      );
+    }
+    setIsPrintReportModalOpen(true);
+  };
+
   const toggleSort = (field: 'name' | 'nis' | 'attendance' | 'score') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
       setSortOrder('asc');
+    }
+  };
+
+  // Export to XLSX (Excel format)
+  const handleExportXLSX = (targetStudents = filteredStudents, suffix = 'Semua') => {
+    try {
+      const filename = exportStudentsToXLSX(targetStudents, extracurriculars, schoolInfo, suffix);
+      showToast(
+        'Ekspor Excel Berhasil',
+        `Data ${targetStudents.length} siswa berhasil disimpan dalam format .xlsx (${filename}).`,
+        'success'
+      );
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal Ekspor', 'Terjadi kesalahan saat menyusun berkas Excel.', 'error');
     }
   };
 
@@ -165,6 +250,7 @@ export const StudentList: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showToast('Ekspor CSV Berhasil', 'Berkas CSV berhasil diunduh.', 'success');
   };
 
   // Import mock / sample data from CSV
@@ -173,8 +259,12 @@ export const StudentList: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      alert(`Berkas "${file.name}" berhasil diunggah dan diverifikasi. Format data siswa sesuai standar SIM SMP Alfa Ali Masykur.`);
+    reader.onload = () => {
+      showToast(
+        'Verifikasi Berkas',
+        `Berkas "${file.name}" berhasil dibaca dan diverifikasi. Format data siswa sesuai standar SIM SMP Alfa Ali Masykur.`,
+        'success'
+      );
     };
     reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -261,18 +351,48 @@ export const StudentList: React.FC = () => {
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <Upload className="w-3.5 h-3.5 text-slate-500" />
-            <span>Impor CSV</span>
+            <span>Impor Data</span>
           </button>
 
+          {/* Export to Excel (.xlsx) */}
           <button
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
+            onClick={() =>
+              handleExportXLSX(
+                selectedStudentIds.length > 0 ? selectedStudents : filteredStudents,
+                selectedStudentIds.length > 0 ? 'Terpilih' : 'Filter'
+              )
+            }
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            title="Unduh data dalam format spreadsheet Excel (.xlsx)"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Ekspor Data</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>
+              Ekspor (.xlsx)
+              {selectedStudentIds.length > 0 && ` (${selectedStudentIds.length})`}
+            </span>
+          </button>
+
+          {/* Print Selected Report Button */}
+          <button
+            id="btn-print-selected-report"
+            onClick={handleOpenPrintReport}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer ${
+              selectedStudentIds.length > 0
+                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 ring-2 ring-amber-400/40 shadow-sm'
+                : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-700'
+            }`}
+            title="Kompilasi ringkasan data dan capaian siswa terpilih ke format laporan siap cetak"
+          >
+            <Printer className={`w-4 h-4 ${selectedStudentIds.length > 0 ? 'text-slate-950' : 'text-slate-600'}`} />
+            <span>Print Selected Report</span>
+            {selectedStudentIds.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.2 text-[10px] rounded-full bg-slate-900 text-white font-bold">
+                {selectedStudentIds.length}
+              </span>
+            )}
           </button>
 
           {isEditable && (
@@ -282,7 +402,7 @@ export const StudentList: React.FC = () => {
                 setStudentToEdit(null);
                 setIsFormModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-500/20 transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Siswa</span>
@@ -290,6 +410,64 @@ export const StudentList: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Active Multi-Selection Bar */}
+      {selectedStudentIds.length > 0 && (
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center gap-3">
+            <span className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+              {selectedStudentIds.length}
+            </span>
+            <div className="text-xs">
+              <span className="font-extrabold text-blue-950">
+                {selectedStudentIds.length} Siswa Terpilih
+              </span>
+              <span className="text-blue-700/80 ml-1.5 hidden md:inline">
+                Siap dikompilasi ke dalam dokumen laporan resmi atau diekspor ke Excel (.xlsx).
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedStudentIds.length < filteredStudents.length && (
+              <button
+                type="button"
+                onClick={handleSelectAllFiltered}
+                className="text-[11px] font-bold text-blue-700 hover:text-blue-900 underline px-1.5 py-1 cursor-pointer"
+              >
+                Pilih Seluruh ({filteredStudents.length}) Siswa
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => handleExportXLSX(selectedStudents, 'Terpilih')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-blue-200 text-slate-700 hover:bg-blue-50 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Ekspor XLSX Terpilih</span>
+            </button>
+
+            <button
+              id="btn-print-selected-banner"
+              type="button"
+              onClick={() => setIsPrintReportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-950" />
+              <span>Print Selected Report ({selectedStudentIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+            >
+              Batal Pilihan
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter and Search Card */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
@@ -414,7 +592,24 @@ export const StudentList: React.FC = () => {
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="py-3 px-3 w-10 text-center">No</th>
+                <th className="py-3 px-3 w-8 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllOnPageSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeOnPageSelected;
+                    }}
+                    onChange={handleToggleSelectAllPage}
+                    aria-label="Pilih semua siswa di halaman aktif"
+                    className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                    title={
+                      isAllOnPageSelected
+                        ? 'Batalkan pilihan halaman ini'
+                        : 'Pilih semua siswa di halaman ini'
+                    }
+                  />
+                </th>
+                <th className="py-3 px-2 w-10 text-center">No</th>
                 <th className="py-3 px-3">Siswa</th>
                 <th className="py-3 px-3">NIS/NISN</th>
                 <th className="py-3 px-3">Kelas</th>
@@ -429,7 +624,7 @@ export const StudentList: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {paginatedStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={11} className="py-12 text-center text-slate-400 text-xs">
                     Tidak ditemukan data siswa yang sesuai dengan kriteria pencarian/filter.
                   </td>
                 </tr>
@@ -438,10 +633,27 @@ export const StudentList: React.FC = () => {
                   const ekskuls = std.ekskulIds
                     .map((id) => extracurriculars.find((e) => e.id === id))
                     .filter(Boolean);
+                  const isSelected = selectedStudentIds.includes(std.id);
 
                   return (
-                    <tr key={std.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-3 text-center text-slate-400 font-medium">
+                    <tr
+                      key={std.id}
+                      className={`transition-colors ${
+                        isSelected
+                          ? 'bg-blue-50/70 hover:bg-blue-100/50'
+                          : 'hover:bg-slate-50/80'
+                      }`}
+                    >
+                      <td className="py-3 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleStudent(std.id)}
+                          aria-label={`Pilih ${std.name}`}
+                          className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-3 px-2 text-center text-slate-400 font-medium">
                         {(currentPage - 1) * itemsPerPage + idx + 1}
                       </td>
                       <td className="py-3 px-3">
@@ -534,6 +746,13 @@ export const StudentList: React.FC = () => {
                             title="Lihat Detail Profil & Kompetensi"
                           >
                             <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setSelectedStudentDetailId(std.id)}
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            title="Cetak Profil Lengkap Siswa (1 Berkas Penuh)"
+                          >
+                            <Printer className="w-4 h-4" />
                           </button>
 
                           {isEditable && (
@@ -653,6 +872,17 @@ export const StudentList: React.FC = () => {
           setStudentToEdit(null);
         }}
         studentToEdit={studentToEdit}
+      />
+
+      {/* Print Selected Report Modal */}
+      <PrintSelectedReportModal
+        isOpen={isPrintReportModalOpen}
+        onClose={() => setIsPrintReportModalOpen(false)}
+        selectedStudents={selectedStudents.length > 0 ? selectedStudents : paginatedStudents}
+        filterInfo={{
+          className: filterClass !== 'all' ? filterClass : undefined,
+          ekskulName: filterEkskul !== 'all' ? extracurriculars.find((e) => e.id === filterEkskul)?.name : undefined,
+        }}
       />
     </div>
   );

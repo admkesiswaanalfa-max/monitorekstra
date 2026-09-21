@@ -125,9 +125,9 @@ export const AttendanceView: React.FC = () => {
     });
     return Array.from(map.entries()).map(([key, list]) => ({
       key,
-      date: list[0].date,
-      meetingNumber: list[0].meetingNumber,
-      topic: list[0].topic,
+      date: list[0]?.date || '',
+      meetingNumber: list[0]?.meetingNumber || 1,
+      topic: list[0]?.topic || 'Latihan Rutin',
       totalStudents: list.length,
       hadirCount: list.filter((l) => l.status === 'H').length,
       izinCount: list.filter((l) => l.status === 'I').length,
@@ -137,8 +137,10 @@ export const AttendanceView: React.FC = () => {
   }, [historyForEkskul]);
 
   // Students ranking by attendance
-  const mostDisciplined = [...ekskulStudents].sort((a, b) => b.attendanceRate - a.attendanceRate).slice(0, 4);
-  const leastDisciplined = [...ekskulStudents].filter((s) => s.attendanceRate < 85);
+  const mostDisciplined = [...(ekskulStudents || [])]
+    .sort((a, b) => (b.attendanceRate || 0) - (a.attendanceRate || 0))
+    .slice(0, 4);
+  const leastDisciplined = (ekskulStudents || []).filter((s) => (s.attendanceRate || 0) < 85);
 
   return (
     <div className="space-y-6">

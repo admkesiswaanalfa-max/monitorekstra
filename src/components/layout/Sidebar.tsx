@@ -1,23 +1,29 @@
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
   Users,
-  Award,
-  UserCheck,
-  ClipboardCheck,
-  TrendingUp,
-  FileSpreadsheet,
   Trophy,
+  UserCheck,
+  Calendar,
+  CheckSquare,
+  BookOpen,
+  TrendingUp,
+  Award,
+  Target,
+  BarChart3,
+  ShieldCheck,
   FileText,
   Settings,
-  GraduationCap,
-  Sparkles,
-  ChevronRight,
   X,
-  LogOut,
+  Sparkles,
+  School,
+  GraduationCap,
   Shield,
-  BookOpen,
+  ClipboardList,
+  ChevronDown,
+  ChevronRight,
+  PieChart,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -33,293 +39,265 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     students,
     extracurriculars,
     achievements,
-    logout,
+    coaches,
   } = useApp();
 
-  // Compute menu items strictly filtered according to currentUser.role
-  const menuItems = useMemo(() => {
-    // Determine student badge count based on role's scope
-    let studentBadgeCount = students.length;
-    if (currentUser.role === 'pembina' && currentUser.assignedEkskulId) {
-      studentBadgeCount = students.filter((s) =>
-        s.ekskulIds.includes(currentUser.assignedEkskulId!)
-      ).length;
-    } else if (currentUser.role === 'wali_kelas' && currentUser.assignedClass) {
-      studentBadgeCount = students.filter(
-        (s) => s.class === currentUser.assignedClass
-      ).length;
-    }
+  const [reportsExpanded, setReportsExpanded] = useState(
+    currentView.startsWith('reports')
+  );
 
-    // Role-specific definitions
-    if (currentUser.role === 'admin') {
-      return [
-        { id: 'dashboard', label: 'Dashboard Admin', icon: LayoutDashboard },
-        { id: 'students', label: 'Master Data Siswa', icon: Users, badge: studentBadgeCount },
-        {
-          id: 'extracurriculars',
-          label: 'Ekstrakurikuler',
-          icon: Award,
-          badge: extracurriculars.length,
-        },
-        { id: 'coaches', label: 'Pembina & Pelatih', icon: UserCheck },
-        { id: 'attendance', label: 'Presensi & Kehadiran', icon: ClipboardCheck },
-        { id: 'development', label: 'Perkembangan Karakter', icon: TrendingUp },
-        { id: 'evaluation', label: 'Penilaian Rapor', icon: FileSpreadsheet },
-        { id: 'achievements', label: 'Prestasi & Piagam', icon: Trophy, badge: achievements.length },
-        { id: 'reports', label: 'Laporan & Dokumen', icon: FileText },
-        { id: 'settings', label: 'Pengaturan SIM', icon: Settings },
-      ];
-    }
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
+    { id: 'students', label: 'Data Siswa', icon: Users, badge: `${students.length}` },
+    { id: 'classes', label: 'Kelas / Rombel', icon: GraduationCap, badge: '6 Kelas' },
+    { id: 'extracurricular', label: 'Ekstrakurikuler', icon: Trophy, badge: `${extracurriculars.length} Cabang` },
+    { id: 'participants', label: 'Peserta Ekskul', icon: UserCheck, badge: null },
+    { id: 'schedule', label: 'Jadwal Kegiatan', icon: Calendar, badge: 'Mingguan' },
+    { id: 'attendance', label: 'Presensi', icon: CheckSquare, badge: null },
+    { id: 'journal', label: 'Jurnal Kegiatan', icon: BookOpen, badge: null },
+    { id: 'development', label: 'Monitoring Perkembangan', icon: TrendingUp, badge: '12 Aspek' },
+    { id: 'achievements', label: 'Prestasi', icon: Award, badge: `${achievements.length}` },
+    { id: 'targets', label: 'Target & Capaian', icon: Target, badge: null },
+    { id: 'analysis', label: 'Analisis & Tren', icon: PieChart, badge: '8 Jawaban' },
+    { id: 'coaches', label: 'Pembina & Pelatih', icon: ShieldCheck, badge: `${coaches.length}` },
+  ];
 
-    if (currentUser.role === 'kepala_sekolah') {
-      return [
-        { id: 'dashboard', label: 'Dashboard Eksekutif', icon: LayoutDashboard },
-        { id: 'students', label: 'Data Peserta Didik', icon: Users, badge: studentBadgeCount },
-        {
-          id: 'extracurriculars',
-          label: 'Cabang Ekstrakurikuler',
-          icon: Award,
-          badge: extracurriculars.length,
-        },
-        { id: 'coaches', label: 'Supervisi Pembina', icon: UserCheck },
-        { id: 'attendance', label: 'Monitoring Kehadiran', icon: ClipboardCheck },
-        { id: 'development', label: 'Capaian Karakter', icon: TrendingUp },
-        { id: 'evaluation', label: 'Rekap Nilai Rapor', icon: FileSpreadsheet },
-        { id: 'achievements', label: 'Prestasi Sekolah', icon: Trophy, badge: achievements.length },
-        { id: 'reports', label: 'Laporan & Pengesahan', icon: FileText },
-      ];
-    }
+  const reportSubItems = [
+    { id: 'reports_individual', label: 'Individu Siswa' },
+    { id: 'reports_ekskul', label: 'Per Ekstrakurikuler' },
+    { id: 'reports_weekly', label: 'Mingguan' },
+    { id: 'reports_monthly', label: 'Bulanan' },
+    { id: 'reports_semester', label: 'Semesteran' },
+    { id: 'reports_annual', label: 'Tahunan' },
+  ];
 
-    if (currentUser.role === 'pembina') {
-      const ekskul = extracurriculars.find((e) => e.id === currentUser.assignedEkskulId);
-      const ekskulName = ekskul ? ekskul.name : 'Ekskul';
-      const myAchievements = currentUser.assignedEkskulId
-        ? achievements.filter((a) => a.ekskulId === currentUser.assignedEkskulId).length
-        : achievements.length;
+  const bottomMenuItems = [
+    { id: 'users', label: 'Manajemen Pengguna', icon: Shield, badge: 'Multi-Role' },
+    { id: 'activity_logs', label: 'Riwayat Aktivitas', icon: ClipboardList, badge: null },
+    { id: 'settings', label: 'Pengaturan', icon: Settings, badge: null },
+  ];
 
-      return [
-        { id: 'dashboard', label: 'Dashboard Pembina', icon: LayoutDashboard },
-        { id: 'students', label: `Anggota ${ekskulName}`, icon: Users, badge: studentBadgeCount },
-        { id: 'attendance', label: 'Presensi & Jurnal Latihan', icon: ClipboardCheck },
-        { id: 'evaluation', label: 'Penilaian 7 Dimensi', icon: FileSpreadsheet },
-        { id: 'development', label: 'Perkembangan Anggota', icon: TrendingUp },
-        { id: 'achievements', label: 'Prestasi & Kejuaraan', icon: Trophy, badge: myAchievements },
-        { id: 'reports', label: 'Laporan Kegiatan Cabang', icon: FileText },
-      ];
-    }
-
-    if (currentUser.role === 'wali_kelas') {
-      const className = currentUser.assignedClass ? `Kelas ${currentUser.assignedClass}` : 'Kelas Perwalian';
-      return [
-        { id: 'dashboard', label: 'Dashboard Wali Kelas', icon: LayoutDashboard },
-        { id: 'students', label: `Siswa ${className}`, icon: Users, badge: studentBadgeCount },
-        { id: 'evaluation', label: 'Nilai Rapor Siswa', icon: FileSpreadsheet },
-        { id: 'development', label: 'Monitoring Karakter', icon: TrendingUp },
-        { id: 'achievements', label: 'Prestasi Siswa Kelas', icon: Trophy, badge: achievements.length },
-        { id: 'reports', label: 'Cetak Rapor Ekstrakurikuler', icon: FileText },
-      ];
-    }
-
-    return [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'students', label: 'Data Siswa', icon: Users, badge: studentBadgeCount },
-    ];
-  }, [currentUser, students, extracurriculars, achievements]);
-
-  const handleSelect = (id: string) => {
-    setCurrentView(id);
-    if (window.innerWidth < 1024) {
-      onClose();
-    }
+  const handleNavClick = (viewId: string) => {
+    setCurrentView(viewId);
+    onClose();
   };
 
-  // Get assigned info for current user
-  const assignedInfo = useMemo(() => {
-    if (currentUser.role === 'pembina' && currentUser.assignedEkskulId) {
-      const eks = extracurriculars.find((e) => e.id === currentUser.assignedEkskulId);
-      return eks ? `Pembina ${eks.name}` : 'Pembina Ekstrakurikuler';
-    }
-    if (currentUser.role === 'wali_kelas' && currentUser.assignedClass) {
-      return `Wali Kelas ${currentUser.assignedClass}`;
-    }
-    if (currentUser.role === 'kepala_sekolah') {
-      return 'Kepala Satuan Pendidikan';
-    }
-    return 'Administrator IT & SIM';
-  }, [currentUser, extracurriculars]);
-
-  const roleTheme = useMemo(() => {
-    switch (currentUser.role) {
-      case 'admin':
-        return {
-          badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-          label: 'Admin Utama',
-          icon: Shield,
-        };
-      case 'kepala_sekolah':
-        return {
-          badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-          label: 'Kepala Sekolah',
-          icon: GraduationCap,
-        };
-      case 'pembina':
-        return {
-          badge: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-          label: 'Pembina Ekskul',
-          icon: BookOpen,
-        };
-      case 'wali_kelas':
-        return {
-          badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-          label: 'Wali Kelas',
-          icon: UserCheck,
-        };
-    }
-  }, [currentUser.role]);
-
-  const RoleIcon = roleTheme.icon;
+  const isReportActive = currentView.startsWith('reports');
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-emerald-950/70 z-40 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar container */}
+      {/* Sidebar Container */}
       <aside
-        className={`no-print fixed top-0 bottom-0 left-0 z-50 w-72 bg-slate-900 text-slate-100 flex flex-col transition-transform duration-300 ease-in-out border-r border-slate-800 lg:translate-x-0 ${
+        id="app-sidebar"
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-emerald-100 flex flex-col border-r border-emerald-800/60 shadow-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } print:hidden`}
       >
-        {/* Brand Header */}
-        <div className="h-20 px-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/40">
+        {/* Top Header in Sidebar */}
+        <div className="p-5 border-b border-emerald-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/15">
-              <GraduationCap className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-emerald-950 shadow-md ring-2 ring-amber-300/30">
+              <School className="w-5 h-5 text-emerald-950" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm tracking-wider text-white">ALFA EMS</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  v2.6
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-medium leading-tight">
-                SMP Alfa Ali Masykur
+              <h1 className="font-extrabold text-white text-sm tracking-tight leading-tight">
+                SMP ALFA ALI MASYKUR
+              </h1>
+              <p className="text-[11px] text-amber-300 font-semibold tracking-wide">
+                Monitoring Ekstrakurikuler
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 lg:hidden cursor-pointer"
             aria-label="Tutup Menu"
+            className="p-1.5 rounded-lg text-emerald-300 hover:text-white hover:bg-emerald-800/60 lg:hidden cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* User Context & Role Banner */}
-        <div className="px-4 py-3 bg-slate-800/50 border-b border-slate-800/80 flex items-center gap-3">
+        {/* User Quick Info Banner */}
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-emerald-900/60 border border-emerald-700/50 flex items-center gap-3">
           <img
             src={currentUser.avatar}
             alt={currentUser.name}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500/30 shrink-0"
+            className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400 shrink-0"
           />
-          <div className="overflow-hidden flex-1">
-            <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span
-                className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded border ${roleTheme.badge}`}
-              >
-                <RoleIcon className="w-2.5 h-2.5" />
-                {roleTheme.label}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
-              {assignedInfo}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-white truncate leading-snug">
+              {currentUser.name}
+            </p>
+            <p className="text-[10px] text-amber-300 font-medium truncate">
+              {currentUser.roleTitle || 'Pengguna Sistem'}
             </p>
           </div>
         </div>
 
-        {/* Navigation Menu List */}
-        <div className="flex-1 px-3 py-4 overflow-y-auto space-y-1">
-          <p className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Menu Sesuai Peran
+        {/* Nav Navigation List */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 scrollbar-thin scrollbar-thumb-emerald-700">
+          <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider px-3 mb-1.5">
+            Menu Utama
           </p>
 
           {menuItems.map((item) => {
-            const isActive = currentView === item.id;
             const Icon = item.icon;
-
+            const isActive = currentView === item.id;
             return (
               <button
                 key={item.id}
-                id={`sidebar-menu-${item.id}`}
-                onClick={() => handleSelect(item.id)}
-                className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                id={`sidebar-nav-${item.id}`}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all group cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 font-semibold'
-                    : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-emerald-950 font-bold shadow-md shadow-amber-950/20 translate-x-0.5'
+                    : 'text-emerald-200 hover:bg-emerald-800/60 hover:text-white'
                 }`}
               >
-                <div className="flex items-center gap-3 truncate">
-                  <Icon
-                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                      isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-400'
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-emerald-950/20 text-emerald-950'
+                        : 'bg-emerald-900/50 text-emerald-300 group-hover:text-amber-300'
                     }`}
-                  />
-                  <span className="truncate">{item.label}</span>
+                  >
+                    <Icon className="w-4 h-4" />
+                  </span>
+                  <span>{item.label}</span>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  {item.badge !== undefined && (
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-200'
+                {item.badge && (
+                  <span
+                    className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      isActive
+                        ? 'bg-emerald-950 text-amber-300'
+                        : 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/50'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* Expandable Laporan Section */}
+          <div className="pt-1">
+            <button
+              onClick={() => {
+                setReportsExpanded(!reportsExpanded);
+                if (!isReportActive) handleNavClick('reports');
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                isReportActive
+                  ? 'bg-emerald-800 text-white font-bold'
+                  : 'text-emerald-200 hover:bg-emerald-800/60 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="p-1.5 rounded-lg bg-emerald-900/50 text-emerald-300">
+                  <FileText className="w-4 h-4" />
+                </span>
+                <span>Laporan & Cetak</span>
+              </div>
+              {reportsExpanded ? (
+                <ChevronDown className="w-3.5 h-3.5 text-emerald-300" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 text-emerald-300" />
+              )}
+            </button>
+
+            {reportsExpanded && (
+              <div className="pl-6 pr-2 py-1 space-y-0.5 border-l-2 border-emerald-700/60 ml-4 my-1">
+                {reportSubItems.map((sub) => {
+                  const isSubActive = currentView === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => handleNavClick(sub.id)}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+                        isSubActive
+                          ? 'bg-amber-400 text-emerald-950 font-bold'
+                          : 'text-emerald-300 hover:text-white hover:bg-emerald-800/40'
                       }`}
                     >
-                      {item.badge}
-                    </span>
-                  )}
-                  {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-80" />}
+                      <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                      <span className="truncate">{sub.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider px-3 pt-3 mb-1.5">
+            Sistem & Konfigurasi
+          </p>
+
+          {bottomMenuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.id;
+            return (
+              <button
+                key={item.id}
+                id={`sidebar-nav-${item.id}`}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all group cursor-pointer ${
+                  isActive
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-emerald-950 font-bold shadow-md shadow-amber-950/20 translate-x-0.5'
+                    : 'text-emerald-200 hover:bg-emerald-800/60 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-emerald-950/20 text-emerald-950'
+                        : 'bg-emerald-900/50 text-emerald-300 group-hover:text-amber-300'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </span>
+                  <span>{item.label}</span>
                 </div>
+
+                {item.badge && (
+                  <span
+                    className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      isActive
+                        ? 'bg-emerald-950 text-amber-300'
+                        : 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/50'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Bottom Quick Info Card */}
-        <div className="p-3.5 m-3 mb-1.5 rounded-xl bg-gradient-to-br from-slate-800 to-slate-800/70 border border-slate-700/60 text-xs">
-          <div className="flex items-center gap-2 text-blue-400 font-semibold text-[11px] mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Hak Akses Terproteksi</span>
+        {/* Footer Info Box */}
+        <div className="p-3 border-t border-emerald-800/80 bg-emerald-950/80">
+          <div className="bg-emerald-900/40 rounded-xl p-2.5 border border-emerald-800/60 text-[11px] text-emerald-200">
+            <div className="flex items-center gap-1.5 text-amber-300 font-bold mb-0.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>SMP Alfa Ali Masykur</span>
+            </div>
+            <p className="text-[10px] text-emerald-300/80 leading-relaxed">
+              Mojotengah, Wonosobo • TP 2026/2027
+            </p>
           </div>
-          <p className="text-[10px] text-slate-300 leading-relaxed">
-            Tampilan disesuaikan dengan wewenang resmi ({roleTheme.label}).
-          </p>
-        </div>
-
-        {/* Logout / Switch Account Action Button */}
-        <div className="p-3 pt-1">
-          <button
-            type="button"
-            id="btn-sidebar-logout"
-            onClick={() => {
-              logout();
-              onClose();
-            }}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5 text-rose-400" />
-            <span>Keluar / Ganti Akun</span>
-          </button>
         </div>
       </aside>
     </>

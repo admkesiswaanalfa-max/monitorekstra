@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Student, Gender, StudentStatus } from '../../types';
-import { X, UserPlus, Save, AlertCircle } from 'lucide-react';
+import { X, UserPlus, Save, AlertCircle, Camera, Upload, Trash2, Sparkles } from 'lucide-react';
 
 interface StudentFormModalProps {
   isOpen: boolean;
@@ -27,6 +27,8 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [selectedEkskuls, setSelectedEkskuls] = useState<string[]>([]);
   const [status, setStatus] = useState<StudentStatus>('Aktif');
   const [error, setError] = useState('');
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (studentToEdit) {
@@ -53,7 +55,78 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setStatus('Aktif');
     }
     setError('');
+    setImageError(null);
   }, [studentToEdit, isOpen]);
+
+  // Process and convert uploaded image file to Base64 with canvas optimization
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setImageError('File harus berupa berkas gambar (JPG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Ukuran gambar maksimal 5MB.');
+      return;
+    }
+
+    setImageError(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawBase64 = event.target?.result as string;
+      if (!rawBase64) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 480;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL(file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.85);
+          setAvatar(compressed);
+        } else {
+          setAvatar(rawBase64);
+        }
+      };
+      img.onerror = () => {
+        setAvatar(rawBase64);
+      };
+      img.src = rawBase64;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleResetAvatar = () => {
+    const defaultUrl = `https://images.unsplash.com/photo-${
+      gender === 'L' ? '1535713875002-d1d0cf377fde' : '1534528741775-53994a69daeb'
+    }?w=150&auto=format&fit=crop&q=80`;
+    setAvatar(defaultUrl);
+    setImageError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -163,6 +236,94 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
               <span>{error}</span>
             </div>
           )}
+
+          {/* Section: Foto Profil Siswa (Upload & Base64 Converter) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            <div className="relative group shrink-0">
+              <img
+                src={
+                  avatar ||
+                  `https://images.unsplash.com/photo-${
+                    gender === 'L' ? '1535713875002-d1d0cf377fde' : '1534528741775-53994a69daeb'
+                  }?w=150&auto=format&fit=crop&q=80`
+                }
+                alt={name || 'Preview Siswa'}
+                referrerPolicy="no-referrer"
+                className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl object-cover border-2 border-white shadow-md ring-2 ring-blue-500/20 bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 bg-slate-900/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 cursor-pointer"
+                title="Pilih foto baru"
+              >
+                <Camera className="w-5 h-5 text-blue-300" />
+                <span>Ganti</span>
+              </button>
+            </div>
+
+            <div className="flex-1 text-center sm:text-left space-y-1.5 w-full">
+              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                <label className="block text-xs font-bold text-slate-800">
+                  Foto Profil Siswa
+                </label>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  Base64 Format
+                </span>
+                {avatar?.startsWith('data:image') && (
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Foto Baru Terpasang
+                  </span>
+                )}
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Pilih berkas foto (JPG, PNG, WEBP). Gambar akan dikonversi ke Base64 dan langsung ditampilkan pratinjaunya.
+              </p>
+
+              {/* Hidden File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/jpg"
+                onChange={handleImageChange}
+                className="hidden"
+                id="student-form-photo-input"
+              />
+
+              <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                  id="btn-upload-photo-student-form"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Ganti Foto Profil</span>
+                </button>
+
+                {avatar && (
+                  <button
+                    type="button"
+                    onClick={handleResetAvatar}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 font-semibold text-xs border border-slate-200 transition-colors cursor-pointer"
+                    title="Reset ke avatar default"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Reset Foto</span>
+                  </button>
+                )}
+              </div>
+
+              {imageError && (
+                <div className="flex items-center gap-1.5 text-rose-600 text-[11px] font-semibold pt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{imageError}</span>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">

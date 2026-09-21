@@ -77,12 +77,12 @@ export const DashboardPrintModal: React.FC<DashboardPrintModalProps> = ({
   );
 
   // Top 5 Students
-  const topStudents = [...students].sort((a, b) => b.overallScore - a.overallScore).slice(0, 5);
+  const topStudents = [...(students || [])].sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0)).slice(0, 5);
 
   // Pembina specific data (if selected)
   const pembinaEkskul =
-    extracurriculars.find((e) => e.id === currentUser.assignedEkskulId) || extracurriculars[0];
-  const pembinaStudents = students.filter((s) => s.ekskulIds.includes(pembinaEkskul.id));
+    (extracurriculars || []).find((e) => e.id === currentUser?.assignedEkskulId) || (extracurriculars || [])[0];
+  const pembinaStudents = (students || []).filter((s) => pembinaEkskul && (s.ekskulIds || []).includes(pembinaEkskul.id));
 
   // Wali kelas specific data (if selected)
   const targetClass = currentUser.assignedClass || 'VIII-A';
@@ -516,7 +516,7 @@ export const DashboardPrintModal: React.FC<DashboardPrintModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {achievements.slice(0, 5).map((a, i) => (
+                  {(achievements || []).slice(0, 5).map((a, i) => (
                     <tr key={a.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
                       <td className="border border-slate-300 py-1.5 px-2 text-center">{i + 1}</td>
                       <td className="border border-slate-300 py-1.5 px-3 font-bold text-slate-900">{a.studentName}</td>

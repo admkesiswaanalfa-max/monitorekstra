@@ -31,37 +31,45 @@ interface KepalaSekolahDashboardProps {
 }
 
 export const KepalaSekolahDashboard: React.FC<KepalaSekolahDashboardProps> = ({ onPrint }) => {
-  const { students, extracurriculars, achievements, coaches, setCurrentView, setSelectedStudentDetailId } = useApp();
+  const {
+    students = [],
+    extracurriculars = [],
+    achievements = [],
+    coaches = [],
+    setCurrentView,
+    setSelectedStudentDetailId,
+  } = useApp();
 
   const totalStudents = students.length;
   const activeStudents = students.filter((s) => s.status === 'Aktif').length;
-  const participationRate = ((activeStudents / totalStudents) * 100).toFixed(1);
+  const participationRate = (((activeStudents / (totalStudents || 1))) * 100).toFixed(1);
 
   const avgAttendance = (
-    students.reduce((acc, s) => acc + s.attendanceRate, 0) / (totalStudents || 1)
+    students.reduce((acc, s) => acc + (s.attendanceRate || 0), 0) / (totalStudents || 1)
   ).toFixed(1);
 
   const avgDevelopment = (
-    students.reduce((acc, s) => acc + s.overallScore, 0) / (totalStudents || 1)
+    students.reduce((acc, s) => acc + (s.overallScore || 0), 0) / (totalStudents || 1)
   ).toFixed(2);
 
   const totalAchievements = achievements.length;
 
   // Comparison data between extracurriculars
-  const ekskulComparisonData = extracurriculars.map((e) => {
-    const members = students.filter((s) => s.ekskulIds.includes(e.id));
+  const ekskulComparisonData = (extracurriculars || []).map((e) => {
+    const members = (students || []).filter((s) => (s.ekskulIds || []).includes(e.id));
     const memberCount = members.length;
     const avgScore = memberCount > 0
-      ? Number((members.reduce((acc, m) => acc + m.overallScore, 0) / memberCount).toFixed(2))
+      ? Number((members.reduce((acc, m) => acc + (m.overallScore || 0), 0) / memberCount).toFixed(2))
       : 0;
     const avgAtt = memberCount > 0
-      ? Number((members.reduce((acc, m) => acc + m.attendanceRate, 0) / memberCount).toFixed(1))
+      ? Number((members.reduce((acc, m) => acc + (m.attendanceRate || 0), 0) / memberCount).toFixed(1))
       : 0;
-    const achCount = achievements.filter((a) => a.ekskulId === e.id).length;
+    const achCount = (achievements || []).filter((a) => a.ekskulId === e.id).length;
+    const displayName = e.name || '';
 
     return {
-      name: e.name.length > 10 ? e.name.slice(0, 9) + '..' : e.name,
-      fullName: e.name,
+      name: displayName.length > 10 ? displayName.slice(0, 9) + '..' : displayName,
+      fullName: displayName,
       skorPerkembangan: avgScore,
       kehadiran: avgAtt,
       prestasi: achCount,
@@ -224,7 +232,7 @@ export const KepalaSekolahDashboard: React.FC<KepalaSekolahDashboardProps> = ({ 
           </div>
 
           <div className="divide-y divide-slate-100">
-            {achievements.slice(0, 4).map((ach) => (
+            {(achievements || []).slice(0, 4).map((ach) => (
               <div key={ach.id} className="py-2.5 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-slate-900">{ach.studentName}</p>
