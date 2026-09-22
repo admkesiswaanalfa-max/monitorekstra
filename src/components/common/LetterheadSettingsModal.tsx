@@ -33,7 +33,22 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
   const { schoolInfo, updateSchoolInfo, showToast } = useApp();
 
   // Local state for letterhead editing
-  const [activeTab, setActiveTab] = useState<'logo_primary' | 'logo_secondary' | 'styling_text'>('logo_primary');
+  const [activeTab, setActiveTab] = useState<
+    'logo_primary' | 'logo_secondary' | 'styling_text' | 'signatories'
+  >('logo_primary');
+
+  // Pejabat Pengesahan & Tanda Tangan
+  const [headmaster, setHeadmaster] = useState(schoolInfo.headmaster || 'Afif Mashadi, S.S.');
+  const [headmasterNip, setHeadmasterNip] = useState(schoolInfo.headmasterNip || '19780512 200501 1 007');
+  const [vicePrincipalStudentAffairs, setVicePrincipalStudentAffairs] = useState(
+    schoolInfo.vicePrincipalStudentAffairs || 'Yulianti, S.Pd.'
+  );
+  const [vicePrincipalStudentAffairsNip, setVicePrincipalStudentAffairsNip] = useState(
+    schoolInfo.vicePrincipalStudentAffairsNip || '19820714 200801 2 011'
+  );
+  const [coordinatorName, setCoordinatorName] = useState(schoolInfo.coordinatorName || 'Ahmad Fauzi, S.Pd.');
+  const [coordinatorNip, setCoordinatorNip] = useState(schoolInfo.coordinatorNip || '19850315 201101 1 012');
+  const [district, setDistrict] = useState(schoolInfo.district || 'Wonosobo');
 
   // Primary logo (Kiri)
   const [logoUrl, setLogoUrl] = useState(schoolInfo.logoUrl || DEFAULT_PRIMARY_LOGO);
@@ -158,10 +173,17 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
       fontFamily,
       fontScale,
       headerColorTheme,
+      headmaster,
+      headmasterNip,
+      vicePrincipalStudentAffairs,
+      vicePrincipalStudentAffairsNip,
+      coordinatorName,
+      coordinatorNip,
+      district,
     });
     showToast(
-      'Kop Surat & Logo Disimpan',
-      'Pengaturan logo dan identitas resmi kop surat berhasil diperbarui di seluruh dokumen!',
+      'Kop Surat & Pejabat Disimpan',
+      'Pengaturan kop surat dan pejabat penandatangan resmi berhasil diperbarui!',
       'success'
     );
     onClose();
@@ -322,6 +344,17 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
           >
             <Building className="w-4 h-4" />
             <span>Format & Teks Kop</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('signatories')}
+            className={`pb-2.5 px-3 font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'signatories'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            <span>Pejabat & Tanda Tangan</span>
           </button>
         </div>
 
@@ -759,6 +792,142 @@ export const LetterheadSettingsModal: React.FC<LetterheadSettingsModalProps> = (
                       onChange={(e) => setWebsite(e.target.value)}
                       placeholder="www.smpalfaalimasykur.sch.id"
                       className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: PEJABAT & TANDA TANGAN (MANUAL) */}
+          {activeTab === 'signatories' && (
+            <div className="space-y-5">
+              <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200">
+                <h4 className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                  <span>Pengaturan Pejabat Pengesahan & Penandatangan Dokumen</span>
+                </h4>
+                <p className="text-[11px] text-emerald-800 mt-1 leading-relaxed">
+                  Nama Kepala Sekolah, Wakasek Kesiswaan, dan NIP dapat diubah secara manual di sini. Perubahan akan otomatis diterapkan pada seluruh lembar cetak laporan dan dokumen resmi.
+                </p>
+              </div>
+
+              {/* 1. Kepala Sekolah (Manual) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-slate-900 text-xs block">
+                    1. Kepala SMP Alfa Ali Masykur (Manual)
+                  </label>
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                    Mengesahkan / Mengetahui
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Nama Lengkap & Gelar
+                    </label>
+                    <input
+                      type="text"
+                      value={headmaster}
+                      onChange={(e) => setHeadmaster(e.target.value)}
+                      placeholder="Afif Mashadi, S.S."
+                      className="w-full px-3 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      NIP / NUPTK Kepala Sekolah
+                    </label>
+                    <input
+                      type="text"
+                      value={headmasterNip}
+                      onChange={(e) => setHeadmasterNip(e.target.value)}
+                      placeholder="19780512 200501 1 007"
+                      className="w-full px-3 py-2 text-xs font-mono text-slate-900 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Wakasek Bidang Kesiswaan */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-slate-900 text-xs block">
+                    2. Wakasek Bidang Kesiswaan (Manual)
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">
+                    Penandatangan / Mengetahui
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Nama Lengkap & Gelar
+                    </label>
+                    <input
+                      type="text"
+                      value={vicePrincipalStudentAffairs}
+                      onChange={(e) => setVicePrincipalStudentAffairs(e.target.value)}
+                      placeholder="Yulianti, S.Pd."
+                      className="w-full px-3 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      NIP Wakasek Kesiswaan
+                    </label>
+                    <input
+                      type="text"
+                      value={vicePrincipalStudentAffairsNip}
+                      onChange={(e) => setVicePrincipalStudentAffairsNip(e.target.value)}
+                      placeholder="19820714 200801 2 011"
+                      className="w-full px-3 py-2 text-xs font-mono text-slate-900 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Kota Titimangsa & Koordinator */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <label className="font-extrabold text-slate-900 text-xs block">
+                  3. Kota / Kabupaten Titimangsa & Koordinator
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Kota Titimangsa Surat
+                    </label>
+                    <input
+                      type="text"
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      placeholder="Wonosobo"
+                      className="w-full px-3 py-2 text-xs font-bold text-slate-900 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Nama Koordinator Ekskul
+                    </label>
+                    <input
+                      type="text"
+                      value={coordinatorName}
+                      onChange={(e) => setCoordinatorName(e.target.value)}
+                      placeholder="Ahmad Fauzi, S.Pd."
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      NIP Koordinator
+                    </label>
+                    <input
+                      type="text"
+                      value={coordinatorNip}
+                      onChange={(e) => setCoordinatorNip(e.target.value)}
+                      placeholder="19850315 201101 1 012"
+                      className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-700"
                     />
                   </div>
                 </div>

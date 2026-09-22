@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { OfficialLetterhead } from '../common/OfficialLetterhead';
+import { AnalysisPrintModal } from './AnalysisPrintModal';
 import {
   BarChart3,
   TrendingUp,
@@ -46,6 +47,7 @@ export const AnalysisView: React.FC = () => {
   } = useApp();
 
   const [period, setPeriod] = useState<string>('Semester Ganjil 2026/2027');
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Check if data is sufficient
   const hasSufficientData = students.length > 0 && extracurriculars.length > 0;
@@ -219,10 +221,12 @@ export const AnalysisView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => window.print()}
+            onClick={() => setIsPrintModalOpen(true)}
+            id="btn-cetak-analisis"
+            title="Buka Lembar Pratinjau & Cetak Laporan Analisis Eksekutif"
             className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold border border-white/20 shadow-md transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4 text-amber-300" />
             <span>Cetak Analisis</span>
           </button>
           <button
@@ -565,6 +569,13 @@ export const AnalysisView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Analysis Print Modal */}
+      <AnalysisPrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        period={period}
+      />
     </div>
   );
 };

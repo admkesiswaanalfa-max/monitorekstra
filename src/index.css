@@ -51,6 +51,7 @@
   #student-print-document,
   #official-print-document,
   #dashboard-print-document,
+  #analysis-print-document,
   .student-printable-doc {
     width: 100% !important;
     max-width: 100% !important;

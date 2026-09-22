@@ -743,8 +743,10 @@ export function exportRecapitulationStudentPerformancePDF(
 
   const headmasterName = schoolInfo.headmaster || 'Afif Mashadi, S.S.';
   const headmasterNip = schoolInfo.headmasterNip || '19780512 200501 1 007';
-  const coordinatorName = schoolInfo.coordinatorName || 'Ahmad Fauzi, S.Pd.';
-  const coordinatorNip = schoolInfo.coordinatorNip || '19850315 201101 1 012';
+  const vicePrincipalName =
+    schoolInfo.vicePrincipalStudentAffairs || schoolInfo.coordinatorName || 'Yulianti, S.Pd.';
+  const vicePrincipalNip =
+    schoolInfo.vicePrincipalStudentAffairsNip || schoolInfo.coordinatorNip || '19820714 200801 2 011';
 
   const colLeft = 50;
   const colRight = pageWidth - 60;
@@ -757,7 +759,7 @@ export function exportRecapitulationStudentPerformancePDF(
   doc.text('Kepala SMP Alfa Ali Masykur', colLeft, currentY + 4, { align: 'center' });
 
   doc.text(`Wonosobo, ${signDate}`, colRight, currentY, { align: 'center' });
-  doc.text('Koordinator Ekstrakurikuler', colRight, currentY + 4, { align: 'center' });
+  doc.text('Wakasek Bidang Kesiswaan', colRight, currentY + 4, { align: 'center' });
 
   // Stamp
   drawOfficialStamp(doc, colLeft, currentY + 13);
@@ -773,10 +775,10 @@ export function exportRecapitulationStudentPerformancePDF(
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text(coordinatorName, colRight, nameY, { align: 'center' });
+  doc.text(vicePrincipalName, colRight, nameY, { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.text(`NIP. ${coordinatorNip}`, colRight, nameY + 4, { align: 'center' });
+  doc.text(`NIP. ${vicePrincipalNip}`, colRight, nameY + 4, { align: 'center' });
 
   const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `Rekap_Kinerja_${cleanTitle}_${academicYear.replace('/', '-')}.pdf`;

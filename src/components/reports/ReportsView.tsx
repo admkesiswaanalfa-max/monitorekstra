@@ -22,6 +22,12 @@ import {
   ChevronDown,
   SlidersHorizontal,
   Settings,
+  PenTool,
+  UserCheck,
+  Edit3,
+  Save,
+  RotateCcw,
+  Check,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { StudentPerformancePdfModal } from './StudentPerformancePdfModal';
@@ -40,6 +46,9 @@ export const ReportsView: React.FC = () => {
     attendanceRecords,
     assessments,
     schoolInfo,
+    classes,
+    coaches,
+    updateSchoolInfo,
     showToast,
     currentView,
   } = useApp();
@@ -79,6 +88,40 @@ export const ReportsView: React.FC = () => {
   const [isLetterheadModalOpen, setIsLetterheadModalOpen] = useState<boolean>(false);
   const [includeLetterhead, setIncludeLetterhead] = useState<boolean>(true);
   const [includeSignatures, setIncludeSignatures] = useState<boolean>(true);
+
+  // Pejabat Penandatangan Manual States (Kepala Sekolah dibuat manual, Wakasek, Wali Kelas, Pembina)
+  const [manualHeadmaster, setManualHeadmaster] = useState<string>(schoolInfo.headmaster || 'Afif Mashadi, S.S.');
+  const [manualHeadmasterNip, setManualHeadmasterNip] = useState<string>(
+    schoolInfo.headmasterNip || '19780512 200501 1 007'
+  );
+  const [manualVicePrincipal, setManualVicePrincipal] = useState<string>(
+    schoolInfo.vicePrincipalStudentAffairs || 'Yulianti, S.Pd.'
+  );
+  const [manualVicePrincipalNip, setManualVicePrincipalNip] = useState<string>(
+    schoolInfo.vicePrincipalStudentAffairsNip || '19820714 200801 2 011'
+  );
+  const [manualCity, setManualCity] = useState<string>(schoolInfo.district || 'Wonosobo');
+  const [manualSignDate, setManualSignDate] = useState<string>(
+    new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  );
+  const [manualWaliKelasName, setManualWaliKelasName] = useState<string>('');
+  const [manualWaliKelasNip, setManualWaliKelasNip] = useState<string>('');
+  const [manualCoachName, setManualCoachName] = useState<string>('');
+  const [manualCoachNip, setManualCoachNip] = useState<string>('');
+  const [showSignatorySettings, setShowSignatorySettings] = useState<boolean>(false);
+
+  // Sync manual state when schoolInfo changes
+  useEffect(() => {
+    if (schoolInfo.headmaster) setManualHeadmaster(schoolInfo.headmaster);
+    if (schoolInfo.headmasterNip) setManualHeadmasterNip(schoolInfo.headmasterNip);
+    if (schoolInfo.vicePrincipalStudentAffairs) setManualVicePrincipal(schoolInfo.vicePrincipalStudentAffairs);
+    if (schoolInfo.vicePrincipalStudentAffairsNip) setManualVicePrincipalNip(schoolInfo.vicePrincipalStudentAffairsNip);
+    if (schoolInfo.district) setManualCity(schoolInfo.district);
+  }, [schoolInfo]);
 
   // Dynamic font family style matching Kop Surat settings
   const fontFamilyStyle = useMemo(() => {
@@ -135,6 +178,44 @@ export const ReportsView: React.FC = () => {
   const currentEkskul = useMemo(() => {
     return extracurriculars.find((e) => e.id === selectedEkskulId) || extracurriculars[0];
   }, [extracurriculars, selectedEkskulId]);
+
+  // Resolve current class & Wali Kelas info
+  const currentClassInfo = useMemo(() => {
+    const targetClass = studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : '7A');
+    return classes.find((c) => c.name === targetClass);
+  }, [classes, studentForRapor?.class, selectedClass]);
+
+  const resolvedWaliKelasName = useMemo(() => {
+    if (manualWaliKelasName) return manualWaliKelasName;
+    if (currentClassInfo?.waliKelas) return currentClassInfo.waliKelas;
+    if (studentForRapor?.waliKelas) return studentForRapor.waliKelas;
+    return 'Ustadz Ahmad Fauzi, S.Pd.I';
+  }, [manualWaliKelasName, currentClassInfo, studentForRapor]);
+
+  const resolvedWaliKelasNip = useMemo(() => {
+    if (manualWaliKelasNip) return manualWaliKelasNip;
+    if (currentClassInfo?.waliKelasNip) return currentClassInfo.waliKelasNip;
+    return '19850315 201101 1 012';
+  }, [manualWaliKelasNip, currentClassInfo]);
+
+  // Resolve Coach / Pembina info
+  const currentCoachObj = useMemo(() => {
+    return coaches.find(
+      (c) => c.name === currentEkskul?.coachName || c.assignedEkskulId === currentEkskul?.id
+    );
+  }, [coaches, currentEkskul]);
+
+  const resolvedCoachName = useMemo(() => {
+    if (manualCoachName) return manualCoachName;
+    if (currentEkskul?.coachName) return currentEkskul.coachName;
+    return 'Pembina Ekstrakurikuler';
+  }, [manualCoachName, currentEkskul]);
+
+  const resolvedCoachNip = useMemo(() => {
+    if (manualCoachNip) return manualCoachNip;
+    if (currentCoachObj?.nip) return currentCoachObj.nip;
+    return '19900315 201601 2 008';
+  }, [manualCoachNip, currentCoachObj]);
 
   // Students belonging to selected ekskul
   const ekskulStudents = useMemo(() => {
@@ -321,101 +402,311 @@ export const ReportsView: React.FC = () => {
     </div>
   );
 
-  const renderDocSignatures = (mode: 'individual' | 'ekskul' | 'general') => {
+  const renderDocSignatures = (
+    mode:
+      | 'rapor_individual'
+      | 'individual'
+      | 'per_ekskul'
+      | 'ekskul'
+      | 'mingguan'
+      | 'bulanan'
+      | 'semesteran'
+      | 'tahunan'
+      | 'presensi'
+      | 'prestasi'
+      | 'general' = 'general'
+  ) => {
     if (!includeSignatures) return null;
-    const today = new Date().toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    const district = schoolInfo.district || 'Wonosobo';
+    const today = manualSignDate;
+    const district = manualCity;
 
-    if (mode === 'individual') {
+    // 1. LAPORAN INDIVIDU SISWA
+    // Yang tanda tangan: Wali Kelas
+    // Yang mengetahui: Orang Tua / Wali Siswa
+    // Yang mengesahkan: Kepala SMP Alfa Ali Masykur
+    if (mode === 'rapor_individual' || mode === 'individual') {
       return (
         <div className="mt-8 pt-4 border-t border-slate-300">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs text-center">
-            <div>
-              <p className="text-slate-600">Mengetahui,</p>
-              <p className="font-bold text-slate-900 mt-0.5">Orang Tua / Wali Santri</p>
-              <div className="h-16 sm:h-20" />
-              <p className="font-bold text-slate-900 underline">( ........................................ )</p>
-              <p className="text-[11px] text-slate-500">Tanda Tangan & Nama Terang</p>
+            {/* Kolom Kiri: Mengetahui Orang Tua / Wali Siswa */}
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="text-slate-600">Mengetahui,</p>
+                <p className="font-bold text-slate-900 mt-0.5">Orang Tua / Wali Siswa</p>
+              </div>
+              <div className="h-16 sm:h-20 flex items-center justify-center">
+                <span className="text-[10px] text-slate-300 print:hidden italic">
+                  [Tanda Tangan Asli]
+                </span>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 underline">
+                  ( {studentForRapor?.parentName || '........................................'} )
+                </p>
+                <p className="text-[11px] text-slate-500">Tanda Tangan & Nama Terang</p>
+              </div>
             </div>
-            <div>
-              <p className="text-slate-600">
-                {district}, {today}
-              </p>
-              <p className="font-bold text-slate-900 mt-0.5">Pembina Ekstrakurikuler</p>
-              <div className="h-16 sm:h-20" />
-              <p className="font-bold text-slate-900 underline">
-                {schoolInfo.coordinatorName || 'Ahmad Fauzi, S.Pd.'}
-              </p>
-              <p className="text-[11px] text-slate-600">
-                NIP. {schoolInfo.coordinatorNip || '19880520 201402 1 004'}
-              </p>
+
+            {/* Kolom Tengah: Mengesahkan Kepala SMP Alfa Ali Masykur */}
+            <div className="flex flex-col justify-between relative">
+              <div>
+                <p className="text-slate-600">Mengesahkan,</p>
+                <p className="font-bold text-slate-900 mt-0.5">Kepala SMP Alfa Ali Masykur</p>
+              </div>
+
+              {/* Cap Stempel Resmi */}
+              <div className="h-16 sm:h-20 flex items-center justify-center relative">
+                <div className="w-16 h-16 rounded-full border border-dashed border-emerald-600/30 flex flex-col items-center justify-center p-1 text-center select-none rotate-[-4deg] pointer-events-none opacity-80">
+                  <span className="text-[6.5px] font-bold text-emerald-800 uppercase tracking-tighter">
+                    SMP ALFA ALI MASYKUR
+                  </span>
+                  <span className="text-[6px] font-bold text-emerald-700 uppercase">
+                    KAB. WONOSOBO
+                  </span>
+                  <span className="text-[7.5px] font-black text-emerald-800">TERAKREDITASI</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                  <span>{manualHeadmaster}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignatorySettings(true)}
+                    className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                    title="Ubah Nama Kepala Sekolah Manual"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </p>
+                <p className="text-[11px] text-slate-600 font-mono">
+                  NIP. {manualHeadmasterNip || '-'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-slate-600">Mengesahkan,</p>
-              <p className="font-bold text-slate-900 mt-0.5">Kepala SMP Alfa Ali Masykur</p>
-              <div className="h-16 sm:h-20" />
-              <p className="font-bold text-slate-900 underline">
-                {schoolInfo.headmaster || 'Afif Mashadi, S.S.'}
-              </p>
-              <p className="text-[11px] text-slate-600">
-                NIP. {schoolInfo.headmasterNip || '19780512 200501 1 007'}
-              </p>
+
+            {/* Kolom Kanan: Yang Tanda Tangan Wali Kelas */}
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="text-slate-600">
+                  {district}, {today}
+                </p>
+                <p className="font-bold text-slate-900 mt-0.5">
+                  Wali Kelas {studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : '')}
+                </p>
+              </div>
+              <div className="h-16 sm:h-20 flex items-center justify-center">
+                <span className="text-[10px] text-slate-300 print:hidden italic">
+                  [Tanda Tangan Asli]
+                </span>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                  <span>{resolvedWaliKelasName}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignatorySettings(true)}
+                    className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                    title="Ubah Nama Wali Kelas Manual"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </p>
+                <p className="text-[11px] text-slate-600 font-mono">
+                  NIP. {resolvedWaliKelasNip || '-'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       );
     }
 
+    // 2. LAPORAN PER EKSTRAKURIKULER
+    // Yang tanda tangan: Pembina Ekstrakurikuler
+    // Yang mengetahui: Wakasek Bidang Kesiswaan
+    // Yang mengesahkan: Kepala SMP Alfa Ali Masykur
+    if (mode === 'per_ekskul' || mode === 'ekskul') {
+      return (
+        <div className="mt-8 pt-4 border-t border-slate-300">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs text-center">
+            {/* Kolom Kiri: Mengetahui Wakasek Bidang Kesiswaan */}
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="text-slate-600">Mengetahui,</p>
+                <p className="font-bold text-slate-900 mt-0.5">Wakasek Bidang Kesiswaan</p>
+              </div>
+              <div className="h-16 sm:h-20 flex items-center justify-center">
+                <span className="text-[10px] text-slate-300 print:hidden italic">
+                  [Tanda Tangan Asli]
+                </span>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                  <span>{manualVicePrincipal}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignatorySettings(true)}
+                    className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                    title="Ubah Nama Wakasek Kesiswaan Manual"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </p>
+                <p className="text-[11px] text-slate-600 font-mono">
+                  NIP. {manualVicePrincipalNip || '-'}
+                </p>
+              </div>
+            </div>
+
+            {/* Kolom Tengah: Mengesahkan Kepala SMP Alfa Ali Masykur */}
+            <div className="flex flex-col justify-between relative">
+              <div>
+                <p className="text-slate-600">Mengesahkan,</p>
+                <p className="font-bold text-slate-900 mt-0.5">Kepala SMP Alfa Ali Masykur</p>
+              </div>
+
+              {/* Cap Stempel Resmi */}
+              <div className="h-16 sm:h-20 flex items-center justify-center relative">
+                <div className="w-16 h-16 rounded-full border border-dashed border-emerald-600/30 flex flex-col items-center justify-center p-1 text-center select-none rotate-[-4deg] pointer-events-none opacity-80">
+                  <span className="text-[6.5px] font-bold text-emerald-800 uppercase tracking-tighter">
+                    SMP ALFA ALI MASYKUR
+                  </span>
+                  <span className="text-[6px] font-bold text-emerald-700 uppercase">
+                    KAB. WONOSOBO
+                  </span>
+                  <span className="text-[7.5px] font-black text-emerald-800">TERAKREDITASI</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                  <span>{manualHeadmaster}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignatorySettings(true)}
+                    className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                    title="Ubah Nama Kepala Sekolah Manual"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </p>
+                <p className="text-[11px] text-slate-600 font-mono">
+                  NIP. {manualHeadmasterNip || '-'}
+                </p>
+              </div>
+            </div>
+
+            {/* Kolom Kanan: Yang Tanda Tangan Pembina Ekstrakurikuler */}
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="text-slate-600">
+                  {district}, {today}
+                </p>
+                <p className="font-bold text-slate-900 mt-0.5">
+                  Pembina {currentEkskul?.name || 'Ekstrakurikuler'}
+                </p>
+              </div>
+              <div className="h-16 sm:h-20 flex items-center justify-center">
+                <span className="text-[10px] text-slate-300 print:hidden italic">
+                  [Tanda Tangan Asli]
+                </span>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                  <span>{resolvedCoachName}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignatorySettings(true)}
+                    className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                    title="Ubah Nama Pembina Manual"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </p>
+                <p className="text-[11px] text-slate-600 font-mono">
+                  NIP. {resolvedCoachNip || '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. LAPORAN MINGGUAN, BULANAN, TAHUNAN (DAN SEMESTERAN / PRESENSI / UMUM)
+    // Yang tanda tangan: Wakasek Bidang Kesiswaan
+    // Yang mengetahui: Kepala SMP Alfa Ali Masykur
     return (
       <div className="mt-8 pt-4 border-t border-slate-300">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs text-center">
-          <div>
-            <p className="text-slate-600">Mengetahui,</p>
-            <p className="font-bold text-slate-900 mt-0.5">Kepala SMP Alfa Ali Masykur</p>
-            <div className="h-16 sm:h-20" />
-            <p className="font-bold text-slate-900 underline">
-              {schoolInfo.headmaster || 'Afif Mashadi, S.S.'}
-            </p>
-            <p className="text-[11px] text-slate-600">
-              NIP. {schoolInfo.headmasterNip || '19780512 200501 1 007'}
-            </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-xs text-center max-w-2xl mx-auto">
+          {/* Kolom Kiri: Mengetahui Kepala SMP Alfa Ali Masykur */}
+          <div className="flex flex-col justify-between">
+            <div>
+              <p className="text-slate-600">Mengetahui,</p>
+              <p className="font-bold text-slate-900 mt-0.5">Kepala SMP Alfa Ali Masykur</p>
+            </div>
+
+            {/* Cap Stempel Resmi */}
+            <div className="h-16 sm:h-20 flex items-center justify-center relative">
+              <div className="w-16 h-16 rounded-full border border-dashed border-emerald-600/30 flex flex-col items-center justify-center p-1 text-center select-none rotate-[-4deg] pointer-events-none opacity-80">
+                <span className="text-[6.5px] font-bold text-emerald-800 uppercase tracking-tighter">
+                  SMP ALFA ALI MASYKUR
+                </span>
+                <span className="text-[6px] font-bold text-emerald-700 uppercase">
+                  KAB. WONOSOBO
+                </span>
+                <span className="text-[7.5px] font-black text-emerald-800">TERAKREDITASI</span>
+              </div>
+            </div>
+
+            <div>
+              <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                <span>{manualHeadmaster}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSignatorySettings(true)}
+                  className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                  title="Ubah Nama Kepala Sekolah Manual"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
+              </p>
+              <p className="text-[11px] text-slate-600 font-mono">
+                NIP. {manualHeadmasterNip || '-'}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-slate-600">Mengetahui,</p>
-            <p className="font-bold text-slate-900 mt-0.5">Wakasek Bidang Kesiswaan</p>
-            <div className="h-16 sm:h-20" />
-            <p className="font-bold text-slate-900 underline">
-              {schoolInfo.vicePrincipalStudentAffairs || 'Yulianti, S.Pd.'}
-            </p>
-            <p className="text-[11px] text-slate-600">
-              NIP. {schoolInfo.vicePrincipalStudentAffairsNip || '19820714 200801 2 011'}
-            </p>
-          </div>
-          <div>
-            <p className="text-slate-600">
-              {district}, {today}
-            </p>
-            <p className="font-bold text-slate-900 mt-0.5">
-              {mode === 'ekskul'
-                ? `Pembina ${currentEkskul?.name || 'Ekstrakurikuler'}`
-                : 'Koordinator Ekstrakurikuler'}
-            </p>
-            <div className="h-16 sm:h-20" />
-            <p className="font-bold text-slate-900 underline">
-              {mode === 'ekskul' && currentEkskul?.coachName
-                ? currentEkskul.coachName
-                : schoolInfo.coordinatorName || 'Ahmad Fauzi, S.Pd.'}
-            </p>
-            <p className="text-[11px] text-slate-600">
-              NIP.{' '}
-              {mode === 'ekskul'
-                ? '19900315 201601 2 008'
-                : schoolInfo.coordinatorNip || '19880520 201402 1 004'}
-            </p>
+
+          {/* Kolom Kanan: Yang Tanda Tangan Wakasek Bidang Kesiswaan */}
+          <div className="flex flex-col justify-between">
+            <div>
+              <p className="text-slate-600">
+                {district}, {today}
+              </p>
+              <p className="font-bold text-slate-900 mt-0.5">Wakasek Bidang Kesiswaan</p>
+            </div>
+            <div className="h-16 sm:h-20 flex items-center justify-center">
+              <span className="text-[10px] text-slate-300 print:hidden italic">
+                [Tanda Tangan Asli]
+              </span>
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 underline flex items-center justify-center gap-1">
+                <span>{manualVicePrincipal}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSignatorySettings(true)}
+                  className="print:hidden text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+                  title="Ubah Nama Wakasek Kesiswaan Manual"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
+              </p>
+              <p className="text-[11px] text-slate-600 font-mono">
+                NIP. {manualVicePrincipalNip || '-'}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -525,6 +816,21 @@ export const ReportsView: React.FC = () => {
             <Settings className="w-3.5 h-3.5 text-amber-300" />
             <span>Ubah Pengaturan Kop & Font</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setShowSignatorySettings(!showSignatorySettings)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer ml-1 ${
+              showSignatorySettings
+                ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-400'
+                : 'bg-emerald-900 hover:bg-emerald-800 text-white'
+            }`}
+            title="Edit Manual Nama & NIP Kepala Sekolah, Wakasek, Wali Kelas, Pembina"
+            id="btn-toggle-signatory-settings"
+          >
+            <PenTool className="w-3.5 h-3.5 text-amber-300" />
+            <span>Pejabat & Tanda Tangan Manual</span>
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700">
@@ -558,6 +864,267 @@ export const ReportsView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Expandable Manual Signatory Settings Panel */}
+      {showSignatorySettings && (
+        <div className="bg-amber-50/80 border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-4 print:hidden animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="p-2 rounded-xl bg-amber-400 text-emerald-950 font-bold">
+                <PenTool className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-black text-slate-900">
+                  Pengaturan Pejabat & Tanda Tangan Pengesahan Laporan (Manual)
+                </h3>
+                <p className="text-xs text-slate-600">
+                  Kepala Sekolah dan pejabat pengesahan dapat disesuaikan secara manual langsung untuk dokumen cetak.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  updateSchoolInfo({
+                    headmaster: manualHeadmaster,
+                    headmasterNip: manualHeadmasterNip,
+                    vicePrincipalStudentAffairs: manualVicePrincipal,
+                    vicePrincipalStudentAffairsNip: manualVicePrincipalNip,
+                    district: manualCity,
+                  });
+                  showToast(
+                    'Pengaturan Tersimpan',
+                    'Nama Kepala Sekolah & Wakasek berhasil disimpan permanen ke profil sekolah.',
+                    'success'
+                  );
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                title="Simpan perubahan ini ke Profil Sekolah"
+              >
+                <Save className="w-3.5 h-3.5 text-amber-300" />
+                <span>Simpan ke Profil</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setManualHeadmaster(schoolInfo.headmaster || 'Afif Mashadi, S.S.');
+                  setManualHeadmasterNip(schoolInfo.headmasterNip || '19780512 200501 1 007');
+                  setManualVicePrincipal(
+                    schoolInfo.vicePrincipalStudentAffairs || 'Yulianti, S.Pd.'
+                  );
+                  setManualVicePrincipalNip(
+                    schoolInfo.vicePrincipalStudentAffairsNip || '19820714 200801 2 011'
+                  );
+                  setManualCity(schoolInfo.district || 'Wonosobo');
+                  setManualWaliKelasName('');
+                  setManualWaliKelasNip('');
+                  setManualCoachName('');
+                  setManualCoachNip('');
+                  showToast('Reset Selesai', 'Nilai tanda tangan dikembalikan ke data default profil.', 'info');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold cursor-pointer"
+                title="Kembalikan ke nilai default profil"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSignatorySettings(false)}
+                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-amber-200/50 cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            {/* 1. Kepala Sekolah (Dibuat Manual Sesuai Permintaan) */}
+            <div className="bg-white p-3.5 rounded-2xl border border-amber-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-700" />
+                  <span>Kepala Sekolah (Manual)</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-[10px] font-bold text-amber-900 border border-amber-200">
+                  Mengesahkan / Mengetahui
+                </span>
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                  Nama Kepala Sekolah & Gelar:
+                </label>
+                <input
+                  type="text"
+                  value={manualHeadmaster}
+                  onChange={(e) => setManualHeadmaster(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900 text-xs"
+                  placeholder="e.g. Afif Mashadi, S.S."
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                  NIP Kepala Sekolah:
+                </label>
+                <input
+                  type="text"
+                  value={manualHeadmasterNip}
+                  onChange={(e) => setManualHeadmasterNip(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-mono text-slate-900 text-xs"
+                  placeholder="e.g. 19780512 200501 1 007"
+                />
+              </div>
+            </div>
+
+            {/* 2. Wakasek Kesiswaan */}
+            <div className="bg-white p-3.5 rounded-2xl border border-amber-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-700" />
+                  <span>Wakasek Kesiswaan</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-[10px] font-bold text-blue-900 border border-blue-200">
+                  Tanda Tangan / Mengetahui
+                </span>
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                  Nama Wakasek Kesiswaan & Gelar:
+                </label>
+                <input
+                  type="text"
+                  value={manualVicePrincipal}
+                  onChange={(e) => setManualVicePrincipal(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900 text-xs"
+                  placeholder="e.g. Yulianti, S.Pd."
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                  NIP Wakasek Kesiswaan:
+                </label>
+                <input
+                  type="text"
+                  value={manualVicePrincipalNip}
+                  onChange={(e) => setManualVicePrincipalNip(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-mono text-slate-900 text-xs"
+                  placeholder="e.g. 19820714 200801 2 011"
+                />
+              </div>
+            </div>
+
+            {/* 3. Wali Kelas / Pembina Sesuai Tab Terpilih */}
+            <div className="bg-white p-3.5 rounded-2xl border border-amber-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-700" />
+                  <span>
+                    {reportType === 'per_ekskul'
+                      ? 'Pembina Ekskul (Manual)'
+                      : 'Wali Kelas (Manual)'}
+                  </span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-[10px] font-bold text-emerald-900 border border-emerald-200">
+                  Tanda Tangan
+                </span>
+              </div>
+              {reportType === 'per_ekskul' ? (
+                <>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                      Nama Pembina ({currentEkskul?.name}):
+                    </label>
+                    <input
+                      type="text"
+                      value={manualCoachName || currentEkskul?.coachName || ''}
+                      onChange={(e) => setManualCoachName(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900 text-xs"
+                      placeholder="e.g. Ahmad Fauzi, S.Pd."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                      NIP Pembina:
+                    </label>
+                    <input
+                      type="text"
+                      value={manualCoachNip || currentCoachObj?.nip || ''}
+                      onChange={(e) => setManualCoachNip(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-mono text-slate-900 text-xs"
+                      placeholder="e.g. 19900315 201601 2 008"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                      Nama Wali Kelas ({studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : '7A')}):
+                    </label>
+                    <input
+                      type="text"
+                      value={manualWaliKelasName || currentClassInfo?.waliKelas || studentForRapor?.waliKelas || ''}
+                      onChange={(e) => setManualWaliKelasName(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900 text-xs"
+                      placeholder="e.g. Ustadz Ahmad Fauzi, S.Pd.I"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                      NIP Wali Kelas:
+                    </label>
+                    <input
+                      type="text"
+                      value={manualWaliKelasNip || currentClassInfo?.waliKelasNip || ''}
+                      onChange={(e) => setManualWaliKelasNip(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-mono text-slate-900 text-xs"
+                      placeholder="e.g. 19850315 201101 1 012"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 4. Kota & Tanggal Titimangsa */}
+            <div className="bg-white p-3.5 rounded-2xl border border-amber-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-emerald-700" />
+                  <span>Titimangsa Laporan</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-800 border border-slate-200">
+                  Tempat & Tanggal
+                </span>
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                  Kota / Kabupaten Pengesahan:
+                </label>
+                <input
+                  type="text"
+                  value={manualCity}
+                  onChange={(e) => setManualCity(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900 text-xs"
+                  placeholder="e.g. Wonosobo"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-0.5">
+                  Tanggal Pengesahan Dokumen:
+                </label>
+                <input
+                  type="text"
+                  value={manualSignDate}
+                  onChange={(e) => setManualSignDate(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900 text-xs"
+                  placeholder="e.g. 22 September 2026"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 6 Core Report Tabs (Section 13-19 and Section 29) */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs print:hidden">
@@ -878,13 +1445,23 @@ export const ReportsView: React.FC = () => {
           </div>
 
           {/* Signatures */}
-          {renderDocSignatures('individual')}
+          {renderDocSignatures('rapor_individual')}
         </div>
       )}
 
       {/* REPORT CONTENT 2: PER EKSTRAKURIKULER (Section 15) */}
       {reportType === 'per_ekskul' && currentEkskul && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+        <div
+          id="official-print-document"
+          style={fontFamilyStyle}
+          className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-300 shadow-md text-slate-900 print:p-0 print:border-none print:shadow-none print:rounded-none space-y-6"
+        >
+          {renderDocHeader(
+            `REKAPITULASI KEGIATAN & KINERJA EKSTRAKURIKULER ${currentEkskul.name.toUpperCase()}`,
+            `SMP ALFA ALI MASYKUR • PEMBINA: ${currentEkskul.coachName.toUpperCase()} • TAHUN PELAJARAN ${schoolInfo.academicYear}`,
+            `421.3/EKS/CABANG/${currentEkskul.code || 'EKS'}/${schoolInfo.academicYear.replace('/', '-')}`
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200">
             <div>
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
@@ -987,13 +1564,26 @@ export const ReportsView: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Signatures */}
+          {renderDocSignatures('per_ekskul')}
         </div>
       )}
 
       {/* REPORT CONTENT 3: MINGGUAN (Section 16) */}
       {reportType === 'mingguan' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+        <div
+          id="official-print-document"
+          style={fontFamilyStyle}
+          className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-300 shadow-md text-slate-900 print:p-0 print:border-none print:shadow-none print:rounded-none space-y-6"
+        >
+          {renderDocHeader(
+            'LAPORAN MINGGUAN KETERLAKSANAAN EKSTRAKURIKULER',
+            `SMP ALFA ALI MASYKUR • PERIODE: ${selectedWeek.toUpperCase()} • TP ${schoolInfo.academicYear}`,
+            `421.3/EKS/MGG/${schoolInfo.academicYear.replace('/', '-')}`
+          )}
+
+          <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 print:bg-transparent print:border-slate-300">
             <h3 className="font-extrabold text-emerald-950 text-sm sm:text-base">
               Rekapitulasi Keterlaksanaan Kegiatan: {selectedWeek}
             </h3>
@@ -1036,13 +1626,26 @@ export const ReportsView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Signatures */}
+          {renderDocSignatures('mingguan')}
         </div>
       )}
 
       {/* REPORT CONTENT 4: BULANAN (Section 17) */}
       {reportType === 'bulanan' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+        <div
+          id="official-print-document"
+          style={fontFamilyStyle}
+          className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-300 shadow-md text-slate-900 print:p-0 print:border-none print:shadow-none print:rounded-none space-y-6"
+        >
+          {renderDocHeader(
+            'LAPORAN EVALUASI & KEMAJUAN BULANAN EKSTRAKURIKULER',
+            `SMP ALFA ALI MASYKUR • PERIODE BULAN: ${selectedMonth.toUpperCase()} • TP ${schoolInfo.academicYear}`,
+            `421.3/EKS/BLN/${schoolInfo.academicYear.replace('/', '-')}`
+          )}
+
+          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 print:bg-transparent print:border-slate-300">
             <h3 className="font-extrabold text-blue-950 text-sm sm:text-base">
               Evaluasi Bulanan Periode: {selectedMonth}
             </h3>
@@ -1079,13 +1682,26 @@ export const ReportsView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Signatures */}
+          {renderDocSignatures('bulanan')}
         </div>
       )}
 
       {/* REPORT CONTENT 5: SEMESTERAN (Section 18) */}
       {reportType === 'semesteran' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+        <div
+          id="official-print-document"
+          style={fontFamilyStyle}
+          className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-300 shadow-md text-slate-900 print:p-0 print:border-none print:shadow-none print:rounded-none space-y-6"
+        >
+          {renderDocHeader(
+            `REKAPITULASI RAPOR EKSTRAKURIKULER SEMESTER ${schoolInfo.semester?.toUpperCase() || 'GANJIL'}`,
+            `SMP ALFA ALI MASYKUR • KELAS: ${selectedClass.toUpperCase()} • TAHUN PELAJARAN ${schoolInfo.academicYear}`,
+            `421.3/EKS/SMT/${schoolInfo.semester?.toLowerCase() || '1'}/${schoolInfo.academicYear.replace('/', '-')}`
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 print:bg-transparent print:border-slate-300">
             <div>
               <h3 className="font-extrabold text-emerald-950 text-sm sm:text-base">
                 Rekapitulasi Rapor Akhir Semester: {period}
@@ -1113,7 +1729,7 @@ export const ReportsView: React.FC = () => {
                   'success'
                 );
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 print:hidden"
               id="btn-export-semester-pdf"
             >
               <Download className="w-3.5 h-3.5 text-amber-300" />
@@ -1155,13 +1771,26 @@ export const ReportsView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Signatures */}
+          {renderDocSignatures('semesteran')}
         </div>
       )}
 
       {/* REPORT CONTENT 6: TAHUNAN (Section 19) */}
       {reportType === 'tahunan' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+        <div
+          id="official-print-document"
+          style={fontFamilyStyle}
+          className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-300 shadow-md text-slate-900 print:p-0 print:border-none print:shadow-none print:rounded-none space-y-6"
+        >
+          {renderDocHeader(
+            'LAPORAN EVALUASI TAHUNAN & PRESTASI EKSTRAKURIKULER',
+            `SMP ALFA ALI MASYKUR • TAHUN PELAJARAN ${schoolInfo.academicYear}`,
+            `421.3/EKS/THN/${schoolInfo.academicYear.replace('/', '-')}`
+          )}
+
+          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 print:bg-transparent print:border-slate-300">
             <h3 className="font-extrabold text-amber-950 text-sm sm:text-base">
               Laporan Evaluasi Tahunan & Inventaris Prestasi TP 2026/2027
             </h3>
@@ -1216,12 +1845,25 @@ export const ReportsView: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Signatures */}
+          {renderDocSignatures('tahunan')}
         </div>
       )}
 
       {/* REPORT CONTENT: PRESENSI LENGKAP */}
       {reportType === 'presensi' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+        <div
+          id="official-print-document"
+          style={fontFamilyStyle}
+          className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-300 shadow-md text-slate-900 print:p-0 print:border-none print:shadow-none print:rounded-none space-y-6"
+        >
+          {renderDocHeader(
+            'REKAPITULASI PRESENSI KEHADIRAN SANTRI EKSTRAKURIKULER',
+            `SMP ALFA ALI MASYKUR • KELAS: ${selectedClass.toUpperCase()} • TAHUN PELAJARAN ${schoolInfo.academicYear}`,
+            `421.3/EKS/ABS/${schoolInfo.academicYear.replace('/', '-')}`
+          )}
+
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
               Rekapitulasi Kehadiran Seluruh Santri
@@ -1263,43 +1905,11 @@ export const ReportsView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Signatures */}
+          {renderDocSignatures('presensi')}
         </div>
       )}
-
-      {/* Official Signatures for Print (Sections 20 & 21) */}
-      <div className="hidden print:block mt-8 pt-4 border-t border-slate-300">
-        <div className="grid grid-cols-3 gap-6 text-xs text-center">
-          <div>
-            <p className="text-slate-600">Mengetahui,</p>
-            <p className="font-bold text-slate-900 mt-0.5">Kepala SMP Alfa Ali Masykur</p>
-            <div className="h-20" />
-            <p className="font-bold text-slate-900 underline">{schoolInfo.headmaster || 'Afif Mashadi, S.S.'}</p>
-            <p className="text-[11px] text-slate-600">NIP. {schoolInfo.headmasterNip || '19780512 200501 1 007'}</p>
-          </div>
-          <div>
-            <p className="text-slate-600">Mengetahui,</p>
-            <p className="font-bold text-slate-900 mt-0.5">Wakasek Bidang Kesiswaan</p>
-            <div className="h-20" />
-            <p className="font-bold text-slate-900 underline">{schoolInfo.vicePrincipalStudentAffairs || 'Yulianti, S.Pd.'}</p>
-            <p className="text-[11px] text-slate-600">NIP. {schoolInfo.vicePrincipalStudentAffairsNip || '19820714 200801 2 011'}</p>
-          </div>
-          <div>
-            <p className="text-slate-600">
-              {schoolInfo.district || 'Wonosobo'}, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-            <p className="font-bold text-slate-900 mt-0.5">
-              {reportType === 'per_ekskul' ? `Pembina ${currentEkskul?.name}` : 'Koordinator Ekstrakurikuler'}
-            </p>
-            <div className="h-20" />
-            <p className="font-bold text-slate-900 underline">
-              {reportType === 'per_ekskul' ? currentEkskul?.coachName : schoolInfo.coordinatorName || 'Ahmad Fauzi, S.Pd.'}
-            </p>
-            <p className="text-[11px] text-slate-600">
-              NIP. {reportType === 'per_ekskul' ? '19900315 201601 2 008' : schoolInfo.coordinatorNip || '19880520 201402 1 004'}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Student Performance PDF Export Modal */}
       <StudentPerformancePdfModal
@@ -1308,6 +1918,12 @@ export const ReportsView: React.FC = () => {
         initialStudentId={selectedStudentId}
         initialEkskulId={selectedEkskulId}
         initialType={pdfModalInitialType}
+      />
+
+      {/* Letterhead & Font Settings Modal */}
+      <LetterheadSettingsModal
+        isOpen={isLetterheadModalOpen}
+        onClose={() => setIsLetterheadModalOpen(false)}
       />
     </div>
   );
