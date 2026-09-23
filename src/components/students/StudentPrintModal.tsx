@@ -4,6 +4,7 @@ import { OfficialLetterhead } from '../common/OfficialLetterhead';
 import { LetterheadSettingsModal } from '../common/LetterheadSettingsModal';
 import { Student } from '../../types';
 import { DEFAULT_PRIMARY_LOGO, DEFAULT_SECONDARY_LOGO } from '../../data/letterheadPresets';
+import { getWaliKelasForClass } from '../../utils/classUtils';
 import {
   Printer,
   Download,
@@ -40,6 +41,7 @@ export const StudentPrintModal: React.FC<StudentPrintModalProps> = ({
     coaches,
     currentUser,
     showToast,
+    classes,
   } = useApp();
 
   // Print customization states
@@ -154,15 +156,9 @@ export const StudentPrintModal: React.FC<StudentPrintModalProps> = ({
   const primaryEkskul = ekskuls[0];
   const coachName = primaryEkskul?.coachName || 'Pembina Ekstrakurikuler';
 
-  // Wali Kelas Name based on class
+  // Wali Kelas Name based on class (dynamic lookup with fallback)
   const getWaliKelasName = (studentClass: string) => {
-    if (studentClass.startsWith('VII-A')) return 'Dra. Siti Aminah, M.Pd.';
-    if (studentClass.startsWith('VII-B')) return 'Budi Santoso, S.Pd.';
-    if (studentClass.startsWith('VIII-A')) return 'Ahmad Subandi, S.Pd.';
-    if (studentClass.startsWith('VIII-B')) return 'Nurul Hidayah, S.Si.';
-    if (studentClass.startsWith('IX-A')) return 'Drs. Hendro Wibowo';
-    if (studentClass.startsWith('IX-B')) return 'Rina Wahyuni, S.Pd.';
-    return 'Wali Kelas ' + studentClass;
+    return getWaliKelasForClass(studentClass, classes);
   };
 
   const waliKelasName = getWaliKelasName(student.class);

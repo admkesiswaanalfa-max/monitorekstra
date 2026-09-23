@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   BarChart3,
   TrendingUp,
@@ -75,12 +76,16 @@ export const StatisticsView: React.FC = () => {
     { month: 'Jun', count: 320 },
   ];
 
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
+
   // Chart 5: Rata-Rata Nilai Setoran Per Kelas
-  const classScores = classes.map((c) => {
-    const stds = students.filter((s) => s.class === c.name);
+  const classScores = availableClassNames.map((clsName) => {
+    const stds = students.filter((s) => s.class === clsName);
     const avgScore = stds.length > 0 ? Math.round(stds.reduce((acc, s) => acc + s.overallProgress, 0) / stds.length) : 80;
     return {
-      kelas: c.name,
+      kelas: clsName,
       nilai: avgScore,
     };
   });
@@ -97,13 +102,13 @@ export const StatisticsView: React.FC = () => {
   ];
 
   // Chart 7: Progress Yanbu'a Setiap Kelas (Tingkat Dasar vs Lanjutan)
-  const classYanbuaGrouped = (classes || []).slice(0, 8).map((c) => {
-    const stds = (students || []).filter((s) => s.class === c.name);
+  const classYanbuaGrouped = availableClassNames.map((clsName) => {
+    const stds = (students || []).filter((s) => s.class === clsName);
     const dasar = stds.filter((s) => s.yanbuaJilid === 'Jilid 1' || s.yanbuaJilid === 'Jilid 2' || s.yanbuaJilid === 'Jilid 3').length;
     const menengah = stds.filter((s) => s.yanbuaJilid === 'Jilid 4' || s.yanbuaJilid === 'Jilid 5').length;
     const mahir = stds.filter((s) => s.yanbuaJilid === 'Jilid 6' || s.yanbuaJilid === 'Jilid 7' || s.yanbuaJilid === "Al-Qur'an").length;
     return {
-      kelas: c.name,
+      kelas: clsName,
       Dasar: dasar,
       Menengah: menengah,
       Mahir: mahir,

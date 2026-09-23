@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Student } from '../../types';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   Users,
   Search,
@@ -40,6 +41,10 @@ export const StudentManagementView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   // Filtered students
   const filteredStudents = useMemo(() => {
@@ -272,9 +277,9 @@ export const StudentManagementView: React.FC = () => {
               className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-hidden"
             >
               <option value="all">Semua Kelas ({students.length})</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.name}>
-                  Kelas {c.name} ({students.filter((s) => s.class === c.name).length})
+              {availableClassNames.map((cls) => (
+                <option key={cls} value={cls}>
+                  Kelas {cls} ({students.filter((s) => s.class === cls).length})
                 </option>
               ))}
             </select>

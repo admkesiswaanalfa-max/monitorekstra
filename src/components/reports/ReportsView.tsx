@@ -35,6 +35,11 @@ import {
   exportIndividualStudentPerformancePDF,
   exportRecapitulationStudentPerformancePDF,
 } from '../../utils/studentPerformancePdfExport';
+import {
+  getAvailableClassNames,
+  getWaliKelasForClass,
+  getWaliKelasNipForClass,
+} from '../../utils/classUtils';
 
 export const ReportsView: React.FC = () => {
   const {
@@ -169,6 +174,10 @@ export const ReportsView: React.FC = () => {
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [pdfModalInitialType, setPdfModalInitialType] = useState<'individual' | 'class_recap' | 'ekskul_recap'>('individual');
 
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
+
   // Selected student for Rapor Individual
   const studentForRapor = useMemo(() => {
     return students.find((s) => s.id === selectedStudentId) || students[0];
@@ -181,22 +190,28 @@ export const ReportsView: React.FC = () => {
 
   // Resolve current class & Wali Kelas info
   const currentClassInfo = useMemo(() => {
-    const targetClass = studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : '7A');
+    const targetClass = studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : (classes[0]?.name || 'VII-A'));
     return classes.find((c) => c.name === targetClass);
   }, [classes, studentForRapor?.class, selectedClass]);
 
   const resolvedWaliKelasName = useMemo(() => {
     if (manualWaliKelasName) return manualWaliKelasName;
     if (currentClassInfo?.waliKelas) return currentClassInfo.waliKelas;
+    const targetClass = studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : '');
+    const dynamicWali = getWaliKelasForClass(targetClass, classes);
+    if (dynamicWali) return dynamicWali;
     if (studentForRapor?.waliKelas) return studentForRapor.waliKelas;
     return 'Ustadz Ahmad Fauzi, S.Pd.I';
-  }, [manualWaliKelasName, currentClassInfo, studentForRapor]);
+  }, [manualWaliKelasName, currentClassInfo, studentForRapor, selectedClass, classes]);
 
   const resolvedWaliKelasNip = useMemo(() => {
     if (manualWaliKelasNip) return manualWaliKelasNip;
     if (currentClassInfo?.waliKelasNip) return currentClassInfo.waliKelasNip;
+    const targetClass = studentForRapor?.class || (selectedClass !== 'all' ? selectedClass : '');
+    const dynamicNip = getWaliKelasNipForClass(targetClass, classes);
+    if (dynamicNip && dynamicNip !== '-') return dynamicNip;
     return '19850315 201101 1 012';
-  }, [manualWaliKelasNip, currentClassInfo]);
+  }, [manualWaliKelasNip, currentClassInfo, studentForRapor, selectedClass, classes]);
 
   // Resolve Coach / Pembina info
   const currentCoachObj = useMemo(() => {
@@ -1219,18 +1234,71 @@ export const ReportsView: React.FC = () => {
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {reportType === 'rapor_individual' && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Pilih Siswa:</label>
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter Kelas:</label>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => {
+                    const newClass = e.target.value;
+                    setSelectedClass(newClass);
+                    const matchedStudents = students.filter(
+                      (s) => newClass === 'all' || s.class === newClass
+                    );
+                    if (matchedStudents.length > 0 && !matchedStudents.some((s) => s.id === selectedStudentId)) {
+                      setSelectedStudentId(matchedStudents[0].id);
+                    }
+                  }}
+                  className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-bold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-700"
+                >
+                  <option value="all">Semua Kelas ({students.length})</option>
+                  {availableClassNames.map((cls) => {
+                    const cCount = students.filter((s) => s.class === cls).length;
+                    return (
+                      <option key={cls} value={cls}>
+                        Kelas {cls} ({cCount})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Pilih Siswa:</label>
+                <select
+                  value={selectedStudentId}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                  className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-bold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-700 w-full sm:w-64"
+                >
+                  {students
+                    .filter((s) => selectedClass === 'all' || s.class === selectedClass)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.class} - {s.nis})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {reportType !== 'rapor_individual' && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter Kelas:</label>
               <select
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-bold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-700 w-full sm:w-72"
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-bold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-700"
               >
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.class} - {s.nis})
-                  </option>
-                ))}
+                <option value="all">Semua Kelas ({students.length})</option>
+                {availableClassNames.map((cls) => {
+                  const cCount = students.filter((s) => s.class === cls).length;
+                  return (
+                    <option key={cls} value={cls}>
+                      Kelas {cls} ({cCount})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}

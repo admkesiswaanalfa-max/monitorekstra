@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { YanbuaLevel } from '../../types';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   BookOpen,
   Plus,
@@ -31,6 +32,10 @@ export const YanbuaMonitoringView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStudentId, setModalStudentId] = useState<string | null>(null);
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   const jilidList: YanbuaLevel[] = [
     'Jilid 1',
@@ -150,10 +155,10 @@ export const YanbuaMonitoringView: React.FC = () => {
               onChange={(e) => setSelectedClass(e.target.value)}
               className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-hidden"
             >
-              <option value="all">Semua Kelas</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.name}>
-                  Kelas {c.name}
+              <option value="all">Semua Kelas ({students.length})</option>
+              {availableClassNames.map((cls) => (
+                <option key={cls} value={cls}>
+                  Kelas {cls} ({students.filter((s) => s.class === cls).length})
                 </option>
               ))}
             </select>

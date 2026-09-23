@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Student, Gender, StudentStatus } from '../../types';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import { X, UserPlus, Save, AlertCircle, Camera, Upload, Trash2, Sparkles } from 'lucide-react';
 
 interface StudentFormModalProps {
@@ -14,7 +15,11 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   onClose,
   studentToEdit,
 }) => {
-  const { addStudent, updateStudent, extracurriculars } = useApp();
+  const { addStudent, updateStudent, extracurriculars, classes, students } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   const [name, setName] = useState('');
   const [nis, setNis] = useState('');
@@ -46,7 +51,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setName('');
       setNis(`2324070${Math.floor(100 + Math.random() * 900)}`);
       setNisn(`0098712${Math.floor(100 + Math.random() * 900)}`);
-      setStudentClass('VIII-A');
+      setStudentClass(availableClassNames[0] || 'VII-A');
       setGender('L');
       setAvatar('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
       setParentName('');
@@ -376,7 +381,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 onChange={(e) => setStudentClass(e.target.value)}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600 bg-white"
               >
-                {['VII-A', 'VII-B', 'VIII-A', 'VIII-B', 'IX-A', 'IX-B'].map((c) => (
+                {availableClassNames.map((c) => (
                   <option key={c} value={c}>
                     Kelas {c}
                   </option>

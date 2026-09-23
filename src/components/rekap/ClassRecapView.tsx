@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   GraduationCap,
   Users,
@@ -23,7 +24,14 @@ export const ClassRecapView: React.FC = () => {
     showToast,
   } = useApp();
 
-  const [selectedClass, setSelectedClass] = useState<string>('7A');
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
+
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    if (classes && classes.length > 0) return classes[0].name;
+    return 'VII-A';
+  });
 
   // Students in selected class
   const classStudents = useMemo(() => {
@@ -128,20 +136,20 @@ export const ClassRecapView: React.FC = () => {
 
       {/* Class Selector Pills */}
       <div className="no-print flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
-        {classes.map((cls) => {
-          const isSelected = selectedClass === cls.name;
-          const count = students.filter((s) => s.class === cls.name).length;
+        {availableClassNames.map((clsName) => {
+          const isSelected = selectedClass === clsName;
+          const count = students.filter((s) => s.class === clsName).length;
           return (
             <button
-              key={cls.id}
-              onClick={() => setSelectedClass(cls.name)}
+              key={clsName}
+              onClick={() => setSelectedClass(clsName)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 isSelected
                   ? 'bg-emerald-800 text-white shadow-md font-extrabold scale-102'
                   : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
               }`}
             >
-              Kelas {cls.name} ({count})
+              Kelas {clsName} ({count})
             </button>
           );
         })}

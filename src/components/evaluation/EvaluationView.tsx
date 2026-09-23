@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   FileSpreadsheet,
   Sparkles,
@@ -13,7 +14,11 @@ import {
 } from 'lucide-react';
 
 export const EvaluationView: React.FC = () => {
-  const { students, extracurriculars, currentUser, showToast } = useApp();
+  const { students, extracurriculars, currentUser, showToast, classes } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   const [selectedClass, setSelectedClass] = useState<string>(() => {
     return currentUser.role === 'wali_kelas' && currentUser.assignedClass ? currentUser.assignedClass : 'all';
@@ -233,13 +238,15 @@ export const EvaluationView: React.FC = () => {
             onChange={(e) => setSelectedClass(e.target.value)}
             className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-600 bg-white"
           >
-            <option value="all">Semua Kelas</option>
-            <option value="VII-A">Kelas VII-A</option>
-            <option value="VII-B">Kelas VII-B</option>
-            <option value="VIII-A">Kelas VIII-A</option>
-            <option value="VIII-B">Kelas VIII-B</option>
-            <option value="IX-A">Kelas IX-A</option>
-            <option value="IX-B">Kelas IX-B</option>
+            <option value="all">Semua Kelas ({students.length})</option>
+            {availableClassNames.map((c) => {
+              const count = students.filter((s) => s.class === c).length;
+              return (
+                <option key={c} value={c}>
+                  Kelas {c} ({count})
+                </option>
+              );
+            })}
           </select>
         </div>
 

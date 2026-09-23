@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, UserPlus, Check, AlertCircle, Shield, Briefcase, Mail, Phone } from 'lucide-react';
 import { SystemUser, UserRole } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { getAvailableClassNames } from '../../utils/classUtils';
 
 interface UserAccountModalProps {
   isOpen: boolean;
@@ -16,7 +17,11 @@ export const UserAccountModal: React.FC<UserAccountModalProps> = ({
   onSave,
   initialData,
 }) => {
-  const { extracurriculars } = useApp();
+  const { extracurriculars, classes, students } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,7 +35,7 @@ export const UserAccountModal: React.FC<UserAccountModalProps> = ({
   const [avatar, setAvatar] = useState('');
   const [error, setError] = useState('');
 
-  const CLASS_OPTIONS = ['VII-A', 'VII-B', 'VII-C', 'VIII-A', 'VIII-B', 'VIII-C', 'IX-A', 'IX-B', 'IX-C'];
+  const CLASS_OPTIONS = availableClassNames;
 
   useEffect(() => {
     if (initialData) {

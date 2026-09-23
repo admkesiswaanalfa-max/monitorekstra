@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   UserCheck,
   Users,
@@ -26,12 +27,20 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({ onPrint 
     achievements,
     setCurrentView,
     setSelectedStudentDetailId,
+    classes,
   } = useApp();
 
-  // Selected class (defaults to currentUser.assignedClass or 'VIII-A')
-  const [selectedClass, setSelectedClass] = useState<string>(currentUser.assignedClass || 'VIII-A');
+  const classOptions = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
-  const classOptions = ['VII-A', 'VII-B', 'VIII-A', 'VIII-B', 'IX-A', 'IX-B'];
+  // Selected class (defaults to currentUser.assignedClass or first available class)
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    if (currentUser.assignedClass && currentUser.assignedClass.trim()) {
+      return currentUser.assignedClass;
+    }
+    return classes && classes.length > 0 ? classes[0].name : 'VII-A';
+  });
 
   // Filter students by chosen class
   const classStudents = students.filter((s) => s.class === selectedClass);

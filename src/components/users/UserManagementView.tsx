@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { User, UserRole } from '../../types';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   Shield,
   UserCheck,
@@ -22,7 +23,11 @@ import {
 const USER_STORAGE_KEY = 'SMP_ALFA_USERS_LIST_V2';
 
 export const UserManagementView: React.FC = () => {
-  const { currentUser, switchRole, extracurriculars, showToast } = useApp();
+  const { currentUser, switchRole, extracurriculars, showToast, classes, students } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   const defaultInitialUsers: User[] = [
     {
@@ -643,12 +648,15 @@ export const UserManagementView: React.FC = () => {
                     className="w-full px-3 py-2 text-xs border border-amber-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-700 bg-white"
                   >
                     <option value="">-- Pilih Kelas --</option>
-                    <option value="VII-A">VII-A (Putra)</option>
-                    <option value="VII-B">VII-B (Putri)</option>
-                    <option value="VIII-A">VIII-A (Putra)</option>
-                    <option value="VIII-B">VIII-B (Putri)</option>
-                    <option value="IX-A">IX-A (Putra)</option>
-                    <option value="IX-B">IX-B (Putri)</option>
+                    {availableClassNames.map((cls) => {
+                      const matchedClass = classes?.find((c) => c.name === cls);
+                      const roomInfo = matchedClass?.room ? ` (${matchedClass.room})` : '';
+                      return (
+                        <option key={cls} value={cls}>
+                          Kelas {cls}{roomInfo}
+                        </option>
+                      );
+                    })}
                   </select>
                   <p className="text-[11px] text-amber-700 mt-1">
                     Wali kelas dapat memantau keterlibatan, rapor, dan catatan pembimbing santri pada kelas tersebut.
@@ -811,12 +819,15 @@ export const UserManagementView: React.FC = () => {
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-700"
                   >
                     <option value="">-- Pilih Kelas --</option>
-                    <option value="VII-A">VII-A</option>
-                    <option value="VII-B">VII-B</option>
-                    <option value="VIII-A">VIII-A</option>
-                    <option value="VIII-B">VIII-B</option>
-                    <option value="IX-A">IX-A</option>
-                    <option value="IX-B">IX-B</option>
+                    {availableClassNames.map((cls) => {
+                      const matchedClass = classes?.find((c) => c.name === cls);
+                      const roomInfo = matchedClass?.room ? ` (${matchedClass.room})` : '';
+                      return (
+                        <option key={cls} value={cls}>
+                          Kelas {cls}{roomInfo}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Student } from '../../types';
 import { OfficialLetterhead } from '../common/OfficialLetterhead';
+import { getAvailableClassNames, getWaliKelasForClass } from '../../utils/classUtils';
 import {
   GraduationCap,
   Users,
@@ -30,28 +31,28 @@ export const ClassManagementView: React.FC = () => {
     setCurrentView,
   } = useApp();
 
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
+
   const classList = useMemo(() => {
-    if (!classes || classes.length === 0) {
-      return [
-        { id: 'cls-7a', name: 'VII-A', wali: 'Ahmad Fauzi, S.Pd.', grade: '7', room: 'Ruang 7.1' },
-        { id: 'cls-7b', name: 'VII-B', wali: 'Yulianti, S.Pd.', grade: '7', room: 'Ruang 7.2' },
-        { id: 'cls-8a', name: 'VIII-A', wali: 'Muhammad Rizal, M.Pd.', grade: '8', room: 'Ruang 8.1' },
-      ];
-    }
-    return classes.map((c) => ({
-      id: c.id,
-      name: c.name,
-      wali: c.waliKelas,
-      grade: c.grade || '7',
-      room: c.room || 'Ruang Kelas',
-      capacity: c.capacity || 32,
-      rombelCode: c.rombelCode,
-      status: c.status,
-    }));
-  }, [classes]);
+    return availableClassNames.map((clsName) => {
+      const matched = classes.find((c) => c.name === clsName);
+      return {
+        id: matched?.id || `cls-${clsName.toLowerCase()}`,
+        name: clsName,
+        wali: matched?.waliKelas || getWaliKelasForClass(clsName, classes),
+        grade: matched?.grade || (clsName.startsWith('VII') ? '7' : clsName.startsWith('VIII') ? '8' : clsName.startsWith('IX') ? '9' : '7'),
+        room: matched?.room || 'Ruang Kelas',
+        capacity: matched?.capacity || 32,
+        rombelCode: matched?.rombelCode,
+        status: matched?.status || 'Aktif',
+      };
+    });
+  }, [availableClassNames, classes]);
 
   const [selectedClass, setSelectedClass] = useState<string>(() => {
-    return classes && classes.length > 0 ? classes[0].name : 'VIII-A';
+    return availableClassNames[0] || 'VII-A';
   });
   const [searchQuery, setSearchQuery] = useState('');
 

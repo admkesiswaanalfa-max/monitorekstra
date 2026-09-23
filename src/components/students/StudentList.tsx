@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Student } from '../../types';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import { StudentDetailModal } from './StudentDetailModal';
 import { StudentFormModal } from './StudentFormModal';
 import { PrintSelectedReportModal } from './PrintSelectedReportModal';
@@ -37,7 +38,12 @@ export const StudentList: React.FC = () => {
     setSelectedStudentDetailId,
     schoolInfo,
     showToast,
+    classes,
   } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   // Search & Filters initialized based on user role
   const [searchQuery, setSearchQuery] = useState('');
@@ -497,13 +503,15 @@ export const StudentList: React.FC = () => {
               }}
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-600 bg-white"
             >
-              <option value="all">Semua Kelas</option>
-              <option value="VII-A">Kelas VII-A</option>
-              <option value="VII-B">Kelas VII-B</option>
-              <option value="VIII-A">Kelas VIII-A</option>
-              <option value="VIII-B">Kelas VIII-B</option>
-              <option value="IX-A">Kelas IX-A</option>
-              <option value="IX-B">Kelas IX-B</option>
+              <option value="all">Semua Kelas ({students.length})</option>
+              {availableClassNames.map((c) => {
+                const count = students.filter((s) => s.class === c).length;
+                return (
+                  <option key={c} value={c}>
+                    Kelas {c} ({count})
+                  </option>
+                );
+              })}
             </select>
           </div>
 

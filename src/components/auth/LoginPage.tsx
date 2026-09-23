@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { INITIAL_USERS } from '../../data/initialData';
 import { User, UserRole } from '../../types';
+import { getAvailableClassNames } from '../../utils/classUtils';
 import {
   GraduationCap,
   Lock,
@@ -206,7 +207,11 @@ const ROLE_CONFIGS: Record<string, RoleConfig> = {
 };
 
 export const LoginPage: React.FC = () => {
-  const { login, schoolInfo, extracurriculars } = useApp();
+  const { login, schoolInfo, extracurriculars, classes, students } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
 
   const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
   const [email, setEmail] = useState('admin@smpalfaalimasykur.sch.id');
@@ -616,7 +621,7 @@ export const LoginPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5">
-                      {['VII-A', 'VII-B', 'VIII-A', 'VIII-B', 'IX-A', 'IX-C'].map((cls) => (
+                      {availableClassNames.map((cls) => (
                         <button
                           key={cls}
                           type="button"

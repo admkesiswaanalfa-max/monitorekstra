@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Student, Gender, StudentStatus, YanbuaLevel } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { getAvailableClassNames, getWaliKelasForClass } from '../../utils/classUtils';
 import { X, Save, UserPlus, BookOpen, Camera, Upload, Trash2, AlertCircle, Sparkles } from 'lucide-react';
 
 interface StudentModalProps {
@@ -14,15 +15,22 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   onClose,
   studentToEdit,
 }) => {
-  const { addStudent, updateStudent, classes } = useApp();
+  const { addStudent, updateStudent, classes, students } = useApp();
+
+  const availableClassNames = useMemo(() => {
+    return getAvailableClassNames(classes, students);
+  }, [classes, students]);
+
+  const defaultClass = classes[0]?.name || 'VII-A';
+  const defaultWali = getWaliKelasForClass(defaultClass, classes);
 
   const [formData, setFormData] = useState({
     nis: '',
     nisn: '',
     name: '',
     gender: 'L' as Gender,
-    class: '7A',
-    waliKelas: 'Ustadz Abdullah Faqih, S.Pd.I',
+    class: defaultClass,
+    waliKelas: defaultWali,
     parentName: '',
     phone: '',
     address: 'Wonosobo',
@@ -68,8 +76,8 @@ export const StudentModal: React.FC<StudentModalProps> = ({
         nisn: `008${Math.floor(1000000 + Math.random() * 9000000)}`,
         name: '',
         gender: 'L',
-        class: '7A',
-        waliKelas: 'Ustadz Abdullah Faqih, S.Pd.I',
+        class: defaultClass,
+        waliKelas: defaultWali,
         parentName: '',
         phone: '081234567890',
         address: 'Mojotengah, Wonosobo',
@@ -93,7 +101,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     setFormData((prev) => ({
       ...prev,
       class: selectedClass,
-      waliKelas: matched ? matched.waliKelas : prev.waliKelas,
+      waliKelas: matched ? matched.waliKelas : getWaliKelasForClass(selectedClass, classes),
     }));
   };
 
@@ -359,9 +367,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 onChange={(e) => handleClassChange(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:outline-hidden text-slate-800 font-bold"
               >
-                {classes.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    Kelas {c.name}
+                {availableClassNames.map((cls) => (
+                  <option key={cls} value={cls}>
+                    Kelas {cls}
                   </option>
                 ))}
               </select>
